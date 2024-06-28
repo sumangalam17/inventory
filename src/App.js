@@ -1,10 +1,11 @@
 import './App.css';
+import { Header } from './components/Header';
 import { Login } from './components/Login';
 
 function App() {
   return (
     <div>
-      <h1 className="App p-10 bg-blue border-black border-2 rounded">hello from react</h1>
+      <Header/>
       <Login/>
     </div>
   );
