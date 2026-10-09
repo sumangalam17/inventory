@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	  th:replace="~{base :: parent(~{::content})}">
+<head>
+	<title>Inventory | Bhagwani Hardware</title>
+</head>
+<body>
+	<section th:fragment="content">
+		<div class="flex flex-wrap items-end justify-between gap-5">
+			<div>
+				<h1 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">Inventory overview</h1>
+				<p class="mt-2 text-gray-600 dark:text-gray-400">Review products and current stock levels.</p>
+			</div>
+			<a th:href="@{/add}"
+			   class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900">
+				<i class="fa-solid fa-plus" aria-hidden="true"></i>
+				New item
+			</a>
+		</div>
+
+		<div th:if="${successMessage != null}" role="status" class="mt-5 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200" th:text="${successMessage}"></div>
+		<p data-purchase-list-feedback role="status" aria-live="polite" class="mt-3 hidden text-sm"></p>
+
+		<section class="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" aria-labelledby="products-heading">
+			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+				<h2 id="products-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Products</h2>
+				<p class="text-sm text-gray-600 dark:text-gray-400">
+					<span th:text="${#lists.size(items)}">0</span>
+					<span th:text="${searchPerformed ? 'matching products' : 'SKUs'}">SKUs</span>
+				</p>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+					<thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+						<tr>
+							<th scope="col" class="px-5 py-3">Product</th>
+							<th scope="col" class="px-5 py-3">Brand</th>
+							<th scope="col" class="px-5 py-3">Size</th>
+							<th scope="col" class="px-5 py-3">Cost price</th>
+							<th scope="col" class="px-5 py-3">Selling price</th>
+							<th scope="col" class="px-5 py-3 text-right">Low-stock threshold</th>
+							<th scope="col" class="px-5 py-3 text-right">On hand</th>
+							<th scope="col" class="px-5 py-3 text-right">Action</th>
+							<th scope="col" class="px-5 py-3 text-right">Purchase list</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:if="${#lists.isEmpty(items)}">
+							<td colspan="9" class="px-5 py-12 text-center">
+								<p class="font-semibold text-gray-900 dark:text-white"
+								   th:text="${searchPerformed ? 'No matching products found' : 'No products in inventory yet'}">No products in inventory yet</p>
+								<p class="mt-1"
+								   th:text="${searchPerformed ? 'Try another product name, brand, or size.' : 'Add your first stock entry to get started.'}">Add your first stock entry to get started.</p>
+							</td>
+						</tr>
+						<tr th:each="item : ${items}" class="border-t border-gray-200 dark:border-gray-700">
+							<th scope="row" class="whitespace-nowrap px-5 py-4 font-semibold text-gray-900 dark:text-white" th:text="${item.name}">Product name</th>
+							<td class="px-5 py-4" th:text="${item.brand}">Brand</td>
+							<td class="px-5 py-4" th:text="${item.size}">Size</td>
+							<td class="px-5 py-4">
+								<select th:aria-label="|Cost price history for ${item.name}|" class="block w-32 rounded-md border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+									<option th:each="costPrice, costIndex : ${costHistoryByItemId[item.itemId]}" th:value="${costPrice}" th:selected="${costIndex.index == 0}" th:text="${#numbers.formatDecimal(costPrice, 1, 2)}">0.00</option>
+								</select>
+							</td>
+							<td class="whitespace-nowrap px-5 py-4" th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</td>
+							<td class="px-5 py-4 text-right" th:text="${item.lowStock}">5</td>
+							<td class="px-5 py-4 text-right font-medium" th:text="${item.count}">0</td>
+							<td class="px-5 py-4 text-right">
+								<a th:href="@{/inventory/edit(itemId=${item.itemId})}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+									<i class="fa-solid fa-pen" aria-hidden="true"></i>
+									Edit
+								</a>
+							</td>
+							<td class="px-5 py-4 text-right">
+								<form th:action="${purchaseItemIds.contains(item.itemId) ? '/purchase-list/remove' : '/purchase-list/add'}" method="post" data-purchase-list-form>
+									<input type="hidden" name="itemId" th:value="${item.itemId}">
+									<button type="submit" class="rounded-md p-2 focus:outline-none focus:ring-4 focus:ring-blue-300"
+											th:classappend="${purchaseItemIds.contains(item.itemId) ? ' text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700' : ' text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-gray-700'}"
+											th:attr="aria-label=${purchaseItemIds.contains(item.itemId) ? 'Remove from purchase list' : 'Add to purchase list'},title=${purchaseItemIds.contains(item.itemId) ? 'Remove from purchase list' : 'Add to purchase list'},data-item-in-list=${purchaseItemIds.contains(item.itemId)}">
+										<i th:class="${purchaseItemIds.contains(item.itemId) ? 'fa-solid fa-trash-can' : 'fa-solid fa-cart-plus'}" aria-hidden="true"></i>
+									</button>
+								</form>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	</section>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	  th:replace="~{base :: parent(~{::content})}">
+<head>
+	<title>Create bill | Bhagwani Hardware</title>
+</head>
+<body>
+	<section th:fragment="content" class="mx-auto max-w-7xl">
+		<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<h1 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">Create bill</h1>
+				<p class="mt-2 text-gray-600 dark:text-gray-400">Add customer details and products for this sale.</p>
+			</div>
+		</div>
+
+		<form id="sell-form" th:action="@{/bill/create}" th:attr="data-suggestions-url=@{/getProductSuggestion},data-customer-url=@{/customer}"
+			  class="grid gap-10 xl:grid-cols-[minmax(0,1fr)_18rem]">
+			<div class="min-w-0">
+				<section aria-labelledby="customer-heading" class="border-b border-gray-200 pb-8 dark:border-gray-700">
+					<h2 id="customer-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Customer</h2>
+					<div class="mt-5 grid gap-5 sm:grid-cols-2">
+						<div>
+							<label for="customer-name" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Customer name <span aria-hidden="true">*</span></label>
+							<input id="customer-name" name="customerName" type="text" required maxlength="120" autocomplete="name"
+								   th:value="${customer != null ? customer.name : ''}"
+								   class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+								   placeholder="Full name">
+						</div>
+						<div>
+							<label for="customer-mobile" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Mobile number <span aria-hidden="true">*</span></label>
+							<input id="customer-mobile" name="mobileNumber" type="tel" required maxlength="25" autocomplete="tel" inputmode="tel"
+								   th:value="${customer != null ? customer.mobileNo : ''}"
+								   class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+								   placeholder="Phone number">
+						</div>
+						<div class="sm:col-span-2">
+							<label for="customer-address" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Address <span class="font-normal text-gray-500">(optional)</span></label>
+							<textarea id="customer-address" name="address" rows="2" maxlength="500" autocomplete="street-address"
+									  th:text="${customer != null ? customer.address : ''}"
+									  class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+									  placeholder="Street, city, or delivery address"></textarea>
+						</div>
+						<div>
+							<label for="bill-type" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Bill type</label>
+							<select id="bill-type" name="billType" required class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+								<option value="sale" th:selected="${selectedBillType == null or selectedBillType == 'sale'}">Sale</option>
+								<option value="returnItem" th:selected="${selectedBillType == 'returnItem'}">Item return</option>
+							</select>
+						</div>
+					</div>
+				</section>
+
+				<section aria-labelledby="sale-items-heading" class="pt-8">
+					<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<h2 id="sale-items-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Products</h2>
+							<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Select an inventory match or enter a custom product, then set its price and quantity.</p>
+						</div>
+					</div>
+
+					<div id="sale-rows" class="sale-rows-list divide-y divide-gray-200 dark:divide-gray-700">
+						<fieldset class="sale-row sale-row-layout grid gap-3 py-5">
+							<legend class="sale-row-title sr-only">Product 1</legend>
+							<div class="sale-name-field relative min-w-0">
+								<label class="sale-name-label mb-2 block text-sm font-medium text-gray-900 dark:text-white">Product <span aria-hidden="true">*</span></label>
+								<input name="productName" type="text" required autocomplete="off" aria-autocomplete="list" aria-expanded="false"
+									   class="sale-name-input block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+										   placeholder="Search or enter a custom product">
+								<div class="sale-suggestions absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800" role="listbox"></div>
+								<p class="sale-item-details mt-1 min-h-5 text-xs text-gray-500 dark:text-gray-400"></p>
+							</div>
+							<div>
+								<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Qty</label>
+								<input name="quantity" type="number" min="1" step="1" value="1" required
+									   class="sale-quantity block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+							</div>
+							<div>
+								<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Unit price</label>
+								<div class="relative">
+									<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500">&#8377;</span>
+									<input name="unitPrice" type="number" min="0" step="0.01" required
+										   class="sale-price block w-full rounded-md border border-gray-300 bg-white py-2.5 pl-7 pr-2 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+										   placeholder="0.00">
+								</div>
+							</div>
+							<div>
+								<span class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Line total</span>
+								<output class="sale-line-total block py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white">$0.00</output>
+							</div>
+							<button type="button" class="remove-sale-row mb-1 inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-gray-800 dark:hover:text-red-400" aria-label="Remove product 1" title="Remove product">
+								<i class="fa-solid fa-trash" aria-hidden="true"></i>
+							</button>
+						</fieldset>
+					</div>
+				</section>
+
+				<p id="sale-feedback" class="mt-5 text-sm" role="status" aria-live="polite"></p>
+				<div class="mt-4 flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
+					<button id="add-sale-row" type="button" aria-label="Add another product" title="Add product"
+							class="inline-flex h-12 w-12 items-center justify-center rounded-md border border-blue-700 text-blue-700 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-gray-800">
+						<i class="fa-solid fa-plus" aria-hidden="true"></i>
+					</button>
+					<button id="create-bill-button" type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-blue-900">
+						<i class="fa-solid fa-receipt" aria-hidden="true"></i>
+						Create bill
+					</button>
+				</div>
+			</div>
+
+			<aside aria-labelledby="bill-summary-heading" class="border-t border-gray-200 pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0 dark:border-gray-700">
+				<h2 id="bill-summary-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Bill summary</h2>
+				<dl class="mt-5 space-y-3 text-sm">
+					<div class="flex justify-between gap-4 text-gray-600 dark:text-gray-400">
+						<dt>Product lines</dt>
+						<dd id="summary-line-count">1</dd>
+					</div>
+					<div class="flex justify-between gap-4 text-gray-600 dark:text-gray-400">
+						<dt>Total quantity</dt>
+						<dd id="summary-quantity">0</dd>
+					</div>
+					<div class="flex justify-between gap-4 text-gray-600 dark:text-gray-400">
+						<dt>Subtotal</dt>
+						<dd id="summary-subtotal">₹0.00</dd>
+					</div>
+					<div class="flex justify-between gap-4 text-gray-600 dark:text-gray-400">
+						<dt>Discount</dt>
+						<dd id="summary-discount">₹0.00</dd>
+					</div>
+				</dl>
+				<div class="mt-5">
+					<label for="discount-amount" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Discount amount</label>
+					<div class="relative">
+						<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500">&#8377;</span>
+						<input id="discount-amount" name="discount" type="number" min="0" step="0.01" value="0" max="0"
+							   class="block w-full rounded-md border border-gray-300 bg-white py-2.5 pl-7 pr-3 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:disabled:bg-gray-700">
+					</div>
+					<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Discount applies to sales only.</p>
+				</div>
+				<div class="mt-6 border-t border-gray-200 pt-5 dark:border-gray-700">
+					<div class="flex items-baseline justify-between gap-4">
+						<span class="font-semibold text-gray-900 dark:text-white">Total due</span>
+						<output id="grand-total" class="text-2xl font-bold text-gray-900 dark:text-white">$0.00</output>
+					</div>
+				</div>
+			</aside>
+		</form>
+
+		<div id="bill-preview" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-950/60 p-4 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="preview-heading" aria-hidden="true">
+			<div class="mx-auto max-w-3xl bg-white shadow-xl">
+				<div class="bill-preview-controls flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+					<h2 id="preview-heading" class="font-semibold text-gray-900">Bill preview</h2>
+					<div class="flex flex-wrap items-center gap-2">
+						<button id="close-preview" type="button" class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">Edit bill</button>
+						<button id="download-bill" type="button" class="inline-flex items-center gap-2 rounded-md border border-blue-700 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50" title="Print or save this bill as PDF">
+							<i class="fa-solid fa-download" aria-hidden="true"></i>
+							Print / download PDF
+						</button>
+						<button id="save-bill" type="button" class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">
+							<i class="fa-solid fa-check" aria-hidden="true"></i>
+							Confirm &amp; save bill
+						</button>
+					</div>
+				</div>
+
+				<article id="bill-print-area" class="p-6 text-gray-900 sm:p-10">
+					<header class="flex flex-wrap items-start justify-between gap-5 border-b-2 border-gray-900 pb-6">
+						<div>
+							<p class="text-xs font-bold uppercase text-blue-800">Bhagwani Hardware</p>
+							<h1 id="bill-preview-title" class="mt-2 text-2xl font-bold">Sale Bill</h1>
+						</div>
+						<dl class="text-right text-sm">
+							<div><dt class="inline text-gray-500">Date: </dt><dd id="bill-date" class="inline font-medium"></dd></div>
+							<div class="mt-1"><dt class="inline text-gray-500">Type: </dt><dd id="bill-preview-type" class="inline font-medium"></dd></div>
+							<div class="mt-1"><dt class="inline text-gray-500">Status: </dt><dd id="bill-status" class="inline font-semibold text-amber-700">Preview</dd></div>
+						</dl>
+					</header>
+
+					<section class="grid gap-5 border-b border-gray-200 py-6 sm:grid-cols-2" aria-label="Bill customer details">
+						<div>
+							<p class="text-xs font-semibold uppercase text-gray-500">Bill to</p>
+							<p id="bill-customer-name" class="mt-2 font-semibold"></p>
+							<p id="bill-customer-mobile" class="mt-1 text-sm text-gray-700"></p>
+							<p id="bill-customer-address" class="mt-1 whitespace-pre-line text-sm text-gray-700"></p>
+						</div>
+						<div class="sm:text-right">
+							<p class="text-xs font-semibold uppercase text-gray-500">Store</p>
+							<p class="mt-2 font-semibold">Bhagwani Hardware</p>
+							<p class="mt-1 text-sm text-gray-700">Inventory sales</p>
+						</div>
+					</section>
+
+					<div class="overflow-x-auto">
+						<table class="w-full text-left text-sm">
+							<thead class="border-b border-gray-300 text-xs uppercase text-gray-500">
+								<tr>
+									<th scope="col" class="py-3 pr-3">Product</th>
+									<th scope="col" class="px-3 py-3 text-right">Qty</th>
+									<th scope="col" class="px-3 py-3 text-right">Unit price</th>
+									<th scope="col" class="py-3 pl-3 text-right">Amount</th>
+								</tr>
+							</thead>
+							<tbody id="bill-item-rows" class="divide-y divide-gray-200"></tbody>
+						</table>
+					</div>
+
+					<footer class="ml-auto mt-6 max-w-sm border-t border-gray-300 pt-4">
+						<div class="flex items-center justify-between gap-4 text-sm">
+							<span>Subtotal</span>
+							<output id="bill-subtotal"></output>
+						</div>
+						<div id="bill-discount-row" class="mt-2 flex items-center justify-between gap-4 text-sm">
+							<span>Discount</span>
+							<output id="bill-discount"></output>
+						</div>
+						<div class="flex items-center justify-between gap-4 text-base font-bold">
+							<span>Total due</span>
+							<output id="bill-total"></output>
+						</div>
+						<p class="mt-8 border-t border-dashed border-gray-300 pt-4 text-center text-xs text-gray-500">Thank you for your business.</p>
+					</footer>
+				</article>
+			</div>
+		</div>
+
+		<template id="sale-row-template">
+			<fieldset class="sale-row sale-row-layout grid gap-3 py-5">
+				<legend class="sale-row-title sr-only"></legend>
+				<div class="sale-name-field relative min-w-0">
+					<label class="sale-name-label mb-2 block text-sm font-medium text-gray-900 dark:text-white">Product <span aria-hidden="true">*</span></label>
+					<input name="productName" type="text" required autocomplete="off" aria-autocomplete="list" aria-expanded="false"
+						   class="sale-name-input block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+						   placeholder="Search or enter a custom product">
+					<div class="sale-suggestions absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800" role="listbox"></div>
+					<p class="sale-item-details mt-1 min-h-5 text-xs text-gray-500 dark:text-gray-400"></p>
+				</div>
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Qty</label>
+					<input name="quantity" type="number" min="1" step="1" value="1" required
+						   class="sale-quantity block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+				</div>
+				<div>
+					<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Unit price</label>
+					<div class="relative">
+						<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500">&#8377;</span>
+							<input name="unitPrice" type="number" min="0" step="0.01" required
+								   class="sale-price block w-full rounded-md border border-gray-300 bg-white py-2.5 pl-7 pr-2 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+							   placeholder="0.00">
+					</div>
+				</div>
+				<div>
+					<span class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Line total</span>
+					<output class="sale-line-total block py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white">$0.00</output>
+				</div>
+				<button type="button" class="remove-sale-row mb-1 inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-gray-800 dark:hover:text-red-400" aria-label="Remove product" title="Remove product">
+					<i class="fa-solid fa-trash" aria-hidden="true"></i>
+				</button>
+			</fieldset>
+		</template>
+
+		<style>
+			@media print {
+				body * { visibility: hidden !important; }
+				#bill-preview, #bill-preview * { visibility: visible !important; }
+				#bill-preview { position: absolute !important; inset: 0 !important; display: block !important; overflow: visible !important; padding: 0 !important; background: white !important; }
+				#bill-preview > div { max-width: none !important; margin: 0 !important; box-shadow: none !important; }
+				#bill-print-area { padding: 0.5in !important; }
+				.bill-preview-controls { display: none !important; }
+			}
+		</style>
+
+		<script>
+			const sellForm = document.querySelector("#sell-form");
+			const saleRows = document.querySelector("#sale-rows");
+			const saleRowTemplate = document.querySelector("#sale-row-template");
+			const addSaleRowButton = document.querySelector("#add-sale-row");
+			const createBillButton = document.querySelector("#create-bill-button");
+			const saleFeedback = document.querySelector("#sale-feedback");
+			const billPreview = document.querySelector("#bill-preview");
+			const billItemRows = document.querySelector("#bill-item-rows");
+			const saveBillButton = document.querySelector("#save-bill");
+			let pendingBill = null;
+			const suggestionTimers = new WeakMap();
+			const suggestionRequests = new WeakMap();
+			const activeSuggestionIndexes = new WeakMap();
+			let activeSuggestionInput = null;
+			const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" });
+
+			function positionSuggestions(input) {
+				const list = input.closest(".sale-name-field").querySelector(".sale-suggestions");
+				const bounds = input.getBoundingClientRect();
+				list.style.left = `${bounds.left}px`;
+				list.style.top = `${bounds.bottom}px`;
+				list.style.width = `${bounds.width}px`;
+			}
+
+			function closeSuggestions(input) {
+				const list = input.closest(".sale-name-field").querySelector(".sale-suggestions");
+				list.replaceChildren();
+				list.classList.add("hidden");
+				list.classList.remove("sale-suggestions-overlay");
+				list.style.removeProperty("left");
+				list.style.removeProperty("top");
+				list.style.removeProperty("width");
+				input.setAttribute("aria-expanded", "false");
+				activeSuggestionIndexes.delete(input);
+				if (activeSuggestionInput === input) activeSuggestionInput = null;
+			}
+
+			function updateSummary() {
+				const rows = [...saleRows.querySelectorAll(".sale-row")];
+				let subtotal = 0;
+				let quantity = 0;
+
+				rows.forEach((row) => {
+					const price = Number(row.querySelector('[name="unitPrice"]').value) || 0;
+					const count = Number(row.querySelector('[name="quantity"]').value) || 0;
+					const lineTotal = price * count;
+					subtotal += lineTotal;
+					quantity += count;
+					row.querySelector(".sale-line-total").textContent = currencyFormatter.format(lineTotal);
+				});
+
+				document.querySelector("#summary-line-count").textContent = String(rows.length);
+				document.querySelector("#summary-quantity").textContent = String(quantity);
+				const billType = document.querySelector("#bill-type").value;
+				const discountInput = document.querySelector("#discount-amount");
+				const isReturn = billType === "returnItem";
+				discountInput.disabled = isReturn;
+				discountInput.max = String(subtotal);
+				const discount = isReturn ? 0 : Math.min(Number(discountInput.value) || 0, subtotal);
+				const totalDue = Math.max(0, subtotal - discount);
+				document.querySelector("#summary-subtotal").textContent = currencyFormatter.format(subtotal);
+				document.querySelector("#summary-discount").textContent = currencyFormatter.format(discount);
+				document.querySelector("#grand-total").textContent = currencyFormatter.format(totalDue);
+				return subtotal;
+			}
+
+			function updateRows() {
+				const rows = [...saleRows.querySelectorAll(".sale-row")];
+				rows.forEach((row, index) => {
+					const input = row.querySelector('[name="productName"]');
+					const inputId = `sale-product-name-${index + 1}`;
+					const suggestionsId = `sale-suggestions-${index + 1}`;
+					input.id = inputId;
+					input.setAttribute("aria-controls", suggestionsId);
+					row.querySelector(".sale-name-label").htmlFor = inputId;
+					row.querySelector(".sale-suggestions").id = suggestionsId;
+					row.querySelector(".sale-row-title").textContent = `Product ${index + 1}`;
+					const removeButton = row.querySelector(".remove-sale-row");
+					removeButton.disabled = rows.length === 1;
+					removeButton.setAttribute("aria-label", `Remove product ${index + 1}`);
+				});
+				updateSummary();
+			}
+
+			function selectProduct(input, item) {
+				const row = input.closest(".sale-row");
+				input.value = item.name ?? "";
+				row.dataset.itemId = item.itemId ?? "";
+				row.dataset.brand = item.brand ?? "";
+				row.dataset.size = item.size ?? "";
+				row.querySelector('[name="unitPrice"]').value = Number(item.price ?? 0).toFixed(2);
+				const quantityInput = row.querySelector('[name="quantity"]');
+				const available = Number(item.count ?? 0);
+				row.dataset.available = String(available);
+				if (document.querySelector("#bill-type").value === "returnItem") {
+					quantityInput.removeAttribute("max");
+					quantityInput.value = "1";
+				} else {
+					quantityInput.max = String(available);
+					quantityInput.value = available > 0 ? "1" : "0";
+				}
+				row.querySelector(".sale-item-details").textContent = [item.brand, item.size, `${available} available`]
+					.filter(Boolean).join(" / ");
+				closeSuggestions(input);
+				updateSummary();
+				input.focus();
+			}
+
+			function setActiveSuggestion(input, index) {
+				const options = [...input.closest(".sale-name-field").querySelectorAll(".sale-suggestion")];
+				if (!options.length) return;
+				const activeIndex = (index + options.length) % options.length;
+				activeSuggestionIndexes.set(input, activeIndex);
+				options.forEach((option, optionIndex) => {
+					const active = optionIndex === activeIndex;
+					option.setAttribute("aria-selected", String(active));
+					option.classList.toggle("bg-blue-50", active);
+					option.classList.toggle("dark:bg-gray-700", active);
+				});
+				options[activeIndex].scrollIntoView({ block: "nearest" });
+			}
+
+			function renderSuggestions(input, items) {
+				const list = input.closest(".sale-name-field").querySelector(".sale-suggestions");
+				list.replaceChildren();
+
+				items.forEach((item) => {
+					const option = document.createElement("button");
+					option.type = "button";
+					option.className = "sale-suggestion block w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700";
+					option.setAttribute("role", "option");
+					option.setAttribute("aria-selected", "false");
+
+					const name = document.createElement("span");
+					name.className = "block font-medium";
+					name.textContent = item.name ?? "";
+					option.append(name);
+
+					const detailText = [item.brand, item.size, `${Number(item.count ?? 0)} in stock`, currencyFormatter.format(Number(item.price ?? 0))]
+						.filter(Boolean).join(" / ");
+					const details = document.createElement("span");
+					details.className = "mt-0.5 block text-xs text-gray-500 dark:text-gray-400";
+					details.textContent = detailText;
+					option.append(details);
+					option.addEventListener("click", () => selectProduct(input, item));
+					list.append(option);
+				});
+
+				list.classList.toggle("hidden", items.length === 0);
+				list.classList.toggle("sale-suggestions-overlay", items.length > 0);
+				input.setAttribute("aria-expanded", String(items.length > 0));
+				activeSuggestionIndexes.delete(input);
+				activeSuggestionInput = items.length > 0 ? input : null;
+				if (activeSuggestionInput) positionSuggestions(input);
+			}
+
+			window.addEventListener("scroll", () => {
+				if (activeSuggestionInput) positionSuggestions(activeSuggestionInput);
+			}, true);
+			window.addEventListener("resize", () => {
+				if (activeSuggestionInput) positionSuggestions(activeSuggestionInput);
+			});
+
+			function renderBillPreview(bill) {
+				document.querySelector("#bill-date").textContent = new Intl.DateTimeFormat("en-IN", {
+					dateStyle: "medium",
+					timeStyle: "short"
+				}).format(new Date());
+				document.querySelector("#bill-customer-name").textContent = bill.customerName;
+				document.querySelector("#bill-customer-mobile").textContent = bill.mobileNumber;
+				document.querySelector("#bill-customer-address").textContent = bill.address || "";
+				const billTitle = bill.billType === "returnItem" ? "Return Bill" : "Sale Bill";
+				document.querySelector("#bill-preview-title").textContent = billTitle;
+				document.querySelector("#bill-preview-type").textContent = billTitle;
+				document.querySelector("#bill-subtotal").textContent = currencyFormatter.format(bill.totalAmount);
+				document.querySelector("#bill-discount").textContent = currencyFormatter.format(bill.discount);
+				document.querySelector("#bill-discount-row").classList.toggle("hidden", bill.discount === 0);
+				document.querySelector("#bill-total").textContent = currencyFormatter.format(bill.totalAmount - bill.discount);
+				billItemRows.replaceChildren();
+
+				bill.items.forEach((item) => {
+					const row = document.createElement("tr");
+					const productCell = document.createElement("th");
+					productCell.scope = "row";
+					productCell.className = "py-4 pr-3 font-medium";
+					productCell.textContent = item.name;
+					const quantityCell = document.createElement("td");
+					quantityCell.className = "px-3 py-4 text-right";
+					quantityCell.textContent = String(item.count);
+					const priceCell = document.createElement("td");
+					priceCell.className = "px-3 py-4 text-right whitespace-nowrap";
+					priceCell.textContent = currencyFormatter.format(item.price);
+					const amountCell = document.createElement("td");
+					amountCell.className = "py-4 pl-3 text-right font-medium whitespace-nowrap";
+					amountCell.textContent = currencyFormatter.format(item.price * item.count);
+					row.append(productCell, quantityCell, priceCell, amountCell);
+					billItemRows.append(row);
+				});
+			}
+
+			function openBillPreview() {
+				billPreview.classList.remove("hidden");
+				billPreview.setAttribute("aria-hidden", "false");
+				document.body.classList.add("overflow-hidden");
+				document.querySelector("#download-bill").focus();
+			}
+
+			function closeBillPreview() {
+				billPreview.classList.add("hidden");
+				billPreview.setAttribute("aria-hidden", "true");
+				document.body.classList.remove("overflow-hidden");
+				createBillButton.focus();
+			}
+
+			addSaleRowButton.addEventListener("click", () => {
+				saleRows.append(saleRowTemplate.content.cloneNode(true));
+				updateRows();
+				saleRows.lastElementChild.querySelector('[name="productName"]').focus();
+			});
+
+			saleRows.addEventListener("click", (event) => {
+				const removeButton = event.target.closest(".remove-sale-row");
+				if (!removeButton || removeButton.disabled) return;
+				removeButton.closest(".sale-row").remove();
+				updateRows();
+			});
+
+			saleRows.addEventListener("input", (event) => {
+				const input = event.target;
+				const row = input.closest(".sale-row");
+				if (!row) return;
+
+				if (input.matches('[name="productName"]')) {
+					clearTimeout(suggestionTimers.get(input));
+					suggestionRequests.get(input)?.abort();
+					row.dataset.itemId = "";
+					row.dataset.brand = "";
+					row.dataset.size = "";
+					row.querySelector('[name="unitPrice"]').value = "";
+					row.querySelector('[name="quantity"]').removeAttribute("max");
+					row.querySelector(".sale-item-details").textContent = "";
+					updateSummary();
+
+					const query = input.value.trim();
+					if (query.length < 3) {
+						closeSuggestions(input);
+						return;
+					}
+
+					suggestionTimers.set(input, setTimeout(async () => {
+						const request = new AbortController();
+						suggestionRequests.set(input, request);
+						try {
+							const url = new URL(sellForm.dataset.suggestionsUrl, window.location.origin);
+							url.searchParams.set("name", query);
+							const response = await fetch(url, { signal: request.signal });
+							if (!response.ok) throw new Error("Could not load product suggestions");
+							const items = await response.json();
+							if (input.value.trim() === query) renderSuggestions(input, items);
+						} catch (error) {
+							if (error.name !== "AbortError") closeSuggestions(input);
+						}
+					}, 250));
+				} else if (input.matches('[name="quantity"], [name="unitPrice"]')) {
+					updateSummary();
+				}
+			});
+
+			saleRows.addEventListener("keydown", (event) => {
+				const input = event.target;
+				if (!input.matches('[name="productName"]')) return;
+				const list = input.closest(".sale-name-field").querySelector(".sale-suggestions");
+				if (list.classList.contains("hidden")) return;
+
+				const activeIndex = activeSuggestionIndexes.get(input) ?? -1;
+				if (event.key === "ArrowDown") {
+					event.preventDefault();
+					setActiveSuggestion(input, activeIndex + 1);
+				} else if (event.key === "ArrowUp") {
+					event.preventDefault();
+					setActiveSuggestion(input, activeIndex < 0 ? list.children.length - 1 : activeIndex - 1);
+				} else if (event.key === "Enter" && activeIndex >= 0) {
+					event.preventDefault();
+					list.children[activeIndex]?.click();
+				} else if (event.key === "Escape") {
+					closeSuggestions(input);
+				}
+			});
+
+			sellForm.addEventListener("submit", (event) => {
+				event.preventDefault();
+				if (!sellForm.reportValidity()) return;
+
+				const rows = [...saleRows.querySelectorAll(".sale-row")];
+				const items = rows.map((row) => ({
+					itemId: row.dataset.itemId || null,
+					name: row.querySelector('[name="productName"]').value.trim(),
+					brand: row.dataset.brand ?? "",
+					size: row.dataset.size ?? "",
+					count: Number(row.querySelector('[name="quantity"]').value),
+					price: Number(row.querySelector('[name="unitPrice"]').value)
+				}));
+				const bill = {
+					customerName: sellForm.elements.customerName.value.trim(),
+					mobileNumber: sellForm.elements.mobileNumber.value.trim(),
+					address: sellForm.elements.address.value.trim(),
+					billType: sellForm.elements.billType.value,
+					discount: sellForm.elements.billType.value === "sale" ? Number(sellForm.elements.discount.value) || 0 : 0,
+					items,
+					totalAmount: updateSummary()
+				};
+
+				pendingBill = bill;
+				document.querySelector("#bill-status").textContent = "Preview";
+				saveBillButton.disabled = false;
+				saleFeedback.textContent = "Review the bill before confirming the sale.";
+				saleFeedback.className = "mt-5 text-sm text-gray-600 dark:text-gray-400";
+				renderBillPreview(bill);
+				openBillPreview();
+			});
+
+			sellForm.elements.billType.addEventListener("change", () => {
+				const isReturn = sellForm.elements.billType.value === "returnItem";
+				saleRows.querySelectorAll(".sale-row").forEach((row) => {
+					const quantityInput = row.querySelector('[name="quantity"]');
+					if (isReturn) {
+						quantityInput.removeAttribute("max");
+						if (Number(quantityInput.value) < 1) quantityInput.value = "1";
+					} else if (row.dataset.itemId) {
+						const available = Number(row.dataset.available || 0);
+						quantityInput.max = String(available);
+						if (Number(quantityInput.value) > available) quantityInput.value = String(available);
+					}
+				});
+				updateSummary();
+			});
+			sellForm.elements.discount.addEventListener("input", updateSummary);
+
+			document.querySelector("#close-preview").addEventListener("click", closeBillPreview);
+			document.querySelector("#download-bill").addEventListener("click", () => window.print());
+			billPreview.addEventListener("click", (event) => {
+				if (event.target === billPreview) closeBillPreview();
+			});
+			document.addEventListener("keydown", (event) => {
+				if (event.key === "Escape" && !billPreview.classList.contains("hidden")) closeBillPreview();
+			});
+
+			saveBillButton.addEventListener("click", async () => {
+				if (!pendingBill) return;
+				saveBillButton.disabled = true;
+				saleFeedback.textContent = "Saving bill...";
+				saleFeedback.className = "mt-5 text-sm text-gray-600 dark:text-gray-400";
+				try {
+					const response = await fetch(sellForm.action, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(pendingBill)
+					});
+					if (!response.ok) throw new Error(`Bill creation failed (HTTP ${response.status}).`);
+					window.location.assign(`${sellForm.dataset.customerUrl}/${encodeURIComponent(pendingBill.mobileNumber)}`);
+				} catch (error) {
+					saleFeedback.textContent = error.message || "Could not create the bill. Please try again.";
+					saleFeedback.className = "mt-5 text-sm text-red-700 dark:text-red-400";
+					saveBillButton.disabled = false;
+				} finally {
+					if (document.querySelector("#bill-status").textContent === "Saved") {
+						saveBillButton.disabled = true;
+					}
+				}
+			});
+
+			updateRows();
+		</script>
+	</section>
+</body>
+</html>

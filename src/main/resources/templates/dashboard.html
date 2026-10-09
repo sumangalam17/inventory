@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base :: parent(~{::content})}">
+<head>
+    <title>Dashboard | Bhagwani Hardware</title>
+</head>
+<body>
+    <section th:fragment="content" class="dashboard-template">
+        <section class="data-grid" aria-label="Sales summary cards">                    <article class="metric-card">
+                        <div class="metric-head">
+                            <span>Today's sales</span>
+                        </div>
+                        <div class="metric-value">
+                            <div class="mini-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                            <div class="metric-number" th:text="|&#8377;${#numbers.formatDecimal(todaySales, 1, 2)}|">₹0.00</div>
+                        </div>
+                        <div class="metric-caption">Today</div>
+                    </article>
+
+                    <article class="metric-card green">
+                        <div class="metric-head">
+                            <span>This month's sales</span>
+                        </div>
+                        <div class="metric-value">
+                            <div class="mini-icon green"><i class="fa-solid fa-calendar-days"></i></div>
+                            <div class="metric-number" th:text="|&#8377;${#numbers.formatDecimal(monthSales, 1, 2)}|">₹0.00</div>
+                        </div>
+                        <div class="metric-caption">This month</div>
+                    </article>
+
+                    <article class="chart-card">
+                        <div class="card-title">
+                            <span>Monthly trend</span>
+                            <div class="legend">
+                                <span><i class="dot blue"></i>Sales</span>
+                            </div>
+                        </div>
+                        <div class="monthly-bar-chart" role="img" aria-label="Sale totals by month for the last 12 months">
+                            <div class="monthly-bar" th:each="month : ${monthlySales}"
+                                 th:title="${month.month + ': ₹' + #numbers.formatDecimal(month.total, 1, 2)}">
+                                <div class="monthly-bar-track">
+                                    <div class="monthly-bar-value"
+                                         th:style="|height: ${month.barHeight}%;|"
+                                         th:classappend="${month.barHeight == 0 ? ' is-empty' : ''}"></div>
+                                </div>
+                                <span class="monthly-bar-label" th:text="${month.month}">Jan</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="chart-card">
+                        <div class="card-title">
+                            <span>Inventory status</span>
+                            <div class="legend">
+                                <span><i class="dot blue"></i>Stock</span>
+                            </div>
+                        </div>
+                        <div class="donut-wrap">
+                            <div class="donut" aria-label="Current inventory status">
+                                <div class="donut-text" th:text="${skuCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="donut-breakdown">
+                            <span class="item"><i class="dot blue"></i>SKUs</span>
+                            <a class="item" th:href="@{/low-stock}">
+                                <i class="dot orange"></i>Low stock <span th:text="${lowStockCount}">0</span>
+                            </a>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="lower-grid" aria-label="Details panels">
+                    <article class="table-card">
+                        <div class="card-title">
+                            <span>Sales summary</span>
+                            <a th:href="@{/bill}" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">View bills</a>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="personnel-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bill</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${#lists.isEmpty(latestBills)}">
+                                        <td colspan="5" class="text-center">No bills created yet.</td>
+                                    </tr>
+                                    <tr th:each="bill : ${latestBills}">
+                                        <td class="font-mono text-xs" th:text="${bill.billNo}">Bill No</td>
+                                        <td th:text="${bill.customerName}">Customer</td>
+                                        <td th:text="${bill.createdAt != null ? #temporals.format(bill.createdAt, 'dd MMM, HH:mm') : ''}">Date</td>
+                                        <td class="value-up" th:text="|&#8377;${#numbers.formatDecimal(bill.total, 1, 2)}|">₹0.00</td>
+                                        <td><a th:href="@{/bill/{billNo}(billNo=${bill.billNo})}" class="font-medium text-blue-700 hover:underline dark:text-blue-400">View</a></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="trend-card">
+                        <div class="card-title">
+                            <span>Current totals</span>
+                            <div class="legend">
+                                <span><i class="dot blue"></i>Month</span>
+                                <span><i class="dot green"></i>Lifetime</span>
+                            </div>
+                        </div>
+                        <div class="table-wrap" style="margin-top: 12px;">
+                            <table class="personnel-table">
+                                <tbody>
+                                    <tr>
+                                        <td>Today's sales</td>
+                                        <td class="value-up" th:text="|&#8377;${#numbers.formatDecimal(todaySales, 1, 2)}|">₹0.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>This month sales</td>
+                                        <td class="value-up" th:text="|&#8377;${#numbers.formatDecimal(monthSales, 1, 2)}|">₹0.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bills this month</td>
+                                        <td class="value-up" th:text="${monthBillCount}">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Lifetime sales</td>
+                                        <td class="value-up" th:text="|&#8377;${#numbers.formatDecimal(totalSales, 1, 2)}|">₹0.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+    </section>
+</body>
+</html>

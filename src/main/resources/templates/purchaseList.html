@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base :: parent(~{::content})}">
+<head>
+	<title>Purchase list | Bhagwani Hardware</title>
+</head>
+<body>
+	<section th:fragment="content">
+		<div class="flex flex-wrap items-end justify-between gap-5">
+			<div>
+				<h1 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">Purchase list</h1>
+				<p class="mt-2 text-gray-600 dark:text-gray-400">Items here are saved and remain on the list until you change them.</p>
+			</div>
+			<a th:href="@{/inventory}" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Back to inventory</a>
+			<a th:href="@{/add-to-stock}" class="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 dark:focus:ring-blue-900">View add-to-stock list</a>
+		</div>
+
+		<section class="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" aria-labelledby="purchase-items-heading">
+			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+				<h2 id="purchase-items-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Requested items</h2>
+				<p class="text-sm text-gray-600 dark:text-gray-400"><span th:text="${#lists.size(items)}">0</span> items</p>
+				<form th:if="${!#lists.isEmpty(items)}" th:action="@{/purchase-list/clear}" method="post" onsubmit="return confirm('Remove every item from the purchase list?')">
+					<button type="submit" class="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-200 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950">Remove all</button>
+				</form>
+			</div>
+			<form th:if="${!#lists.isEmpty(items)}" th:action="@{/purchase-list/update}" method="post">
+				<div class="overflow-x-auto">
+					<table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+						<thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+							<tr>
+								<th scope="col" class="px-5 py-3">Item</th>
+								<th scope="col" class="px-5 py-3">Brand</th>
+								<th scope="col" class="px-5 py-3">Size</th>
+								<th scope="col" class="px-5 py-3">Quantity to purchase</th>
+								<th scope="col" class="px-5 py-3 text-right">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="item : ${items}" class="border-t border-gray-200 dark:border-gray-700">
+								<th scope="row" class="px-5 py-4 font-semibold text-gray-900 dark:text-white" th:text="${item.name}">Item name</th>
+								<td class="px-5 py-4" th:text="${item.brand != null ? item.brand : '—'}">Brand</td>
+								<td class="px-5 py-4" th:text="${item.size != null and !#strings.isEmpty(item.size) ? item.size : '—'}">Size</td>
+								<td class="px-5 py-4">
+									<input type="hidden" name="itemIds" th:value="${item.id}">
+									<input type="number" name="quantities" min="1" step="1" required th:value="${item.quantity}" th:aria-label="|Quantity for ${item.name}|" class="block w-32 rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+								</td>
+								<td class="px-5 py-4 text-right">
+									<button type="submit" form="remove-purchase-item" name="id" th:value="${item.id}" th:aria-label="|Remove ${item.name} from purchase list|" title="Remove from purchase list" class="rounded-md p-2 text-red-700 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-200 dark:text-red-400 dark:hover:bg-gray-700">
+										<i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+									</button>
+									<button type="submit" th:formaction="@{/add-to-stock/add}" name="id" th:value="${item.id}" th:aria-label="|Add ${item.name} to stock list|" title="Add to stock list" class="rounded-md p-2 text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:text-blue-400 dark:hover:bg-gray-700">
+										<i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+									</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="flex justify-end border-t border-gray-200 px-5 py-4 dark:border-gray-700">
+					<button type="submit" class="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900">Save quantities</button>
+				</div>
+			</form>
+			<form id="remove-purchase-item" th:action="@{/purchase-list/remove-item}" method="post" class="hidden"></form>
+			<p th:if="${#lists.isEmpty(items)}" class="px-5 py-12 text-center text-gray-600 dark:text-gray-400">Your purchase list is empty. Add items from inventory or enter a new item below.</p>
+		</section>
+
+		<section class="mt-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800" aria-labelledby="add-custom-item-heading">
+			<h2 id="add-custom-item-heading" class="text-lg font-semibold text-gray-900 dark:text-white">Add an item not in inventory</h2>
+			<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Add a one-off item by name; it will be saved to this purchase list only.</p>
+			<form th:action="@{/purchase-list/add-custom}" method="post" class="mt-4 grid gap-4 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+				<div>
+					<label for="customItemName" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Item name</label>
+					<input id="customItemName" name="name" type="text" required maxlength="255" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="Enter item name">
+				</div>
+				<div>
+					<label for="customItemQuantity" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Quantity</label>
+					<input id="customItemQuantity" name="quantity" type="number" min="1" step="1" value="1" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+				</div>
+				<button type="submit" class="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900">Add to list</button>
+			</form>
+		</section>
+	</section>
+</body>
+</html>

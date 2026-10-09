@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	  th:replace="~{base :: parent(~{::content})}">
+<head>
+	<title>New item | Bhagwani Hardware</title>
+</head>
+<body>
+	<section th:fragment="content" class="mx-auto max-w-3xl">
+		<div class="mb-7">
+			<h1 class="mt-3 text-3xl font-bold text-gray-900 dark:text-white">New item</h1>
+			<p class="mt-2 text-gray-600 dark:text-gray-400">Enter product details and the quantity received.</p>
+		</div>
+
+		<form id="add-item-form" th:action="@{/add}" th:attr="data-suggestions-url=@{/getProductSuggestion},data-home-url=@{/}" method="post"
+			  class="space-y-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<div>
+					<h2 class="text-base font-semibold text-gray-900 dark:text-white">Products</h2>
+					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add one or more products. Fields marked required must be completed.</p>
+				</div>
+			</div>
+
+			<div id="product-rows" class="space-y-4">
+				<fieldset class="product-row rounded-md border border-gray-200 p-4 dark:border-gray-700">
+					<div class="mb-4 flex items-center justify-between">
+						<legend class="product-number font-semibold text-gray-900 dark:text-white">Product 1</legend>
+						<button type="button" class="remove-product rounded p-2 text-gray-500 hover:bg-gray-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-gray-700 dark:hover:text-red-400" aria-label="Remove product 1" title="Remove product">
+							<i class="fa-solid fa-trash" aria-hidden="true"></i>
+						</button>
+					</div>
+					<div class="grid gap-5 sm:grid-cols-2">
+						<div class="name-field relative sm:col-span-2">
+							<label class="product-name-label mb-2 block text-sm font-medium text-gray-900 dark:text-white">Product name <span aria-hidden="true">*</span></label>
+							<input name="name" type="text" required maxlength="255" autocomplete="off" aria-autocomplete="list" aria-expanded="false" class="product-name-input block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. Claw hammer">
+							<div class="name-suggestions absolute z-10 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700" role="listbox"></div>
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Brand</label>
+							<input name="brand" type="text" maxlength="120" autocomplete="off" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. Stanley">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Size or variant</label>
+							<input name="size" type="text" maxlength="120" autocomplete="off" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. 16 oz">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Cost price <span aria-hidden="true">*</span></label>
+							<input name="costPrice" type="number" min="0" step="0.01" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="0.00">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Selling price <span class="font-normal text-gray-500">(optional)</span></label>
+							<input name="price" type="number" min="0" step="0.01" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="0.00">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Quantity received <span aria-hidden="true">*</span></label>
+							<input name="count" type="number" min="1" step="1" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="1">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Low-stock threshold</label>
+							<input name="lowStock" type="number" min="1" step="1" value="5" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Show this product when quantity drops below this value.</p>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+
+			<template id="product-row-template">
+				<fieldset class="product-row rounded-md border border-gray-200 p-4 dark:border-gray-700">
+					<div class="mb-4 flex items-center justify-between">
+						<legend class="product-number font-semibold text-gray-900 dark:text-white"></legend>
+						<button type="button" class="remove-product rounded p-2 text-gray-500 hover:bg-gray-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-gray-700 dark:hover:text-red-400" aria-label="Remove product" title="Remove product">
+							<i class="fa-solid fa-trash" aria-hidden="true"></i>
+						</button>
+					</div>
+					<div class="grid gap-5 sm:grid-cols-2">
+						<div class="name-field relative sm:col-span-2">
+							<label class="product-name-label mb-2 block text-sm font-medium text-gray-900 dark:text-white">Product name <span aria-hidden="true">*</span></label>
+							<input name="name" type="text" required maxlength="255" autocomplete="off" aria-autocomplete="list" aria-expanded="false" class="product-name-input block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. Claw hammer">
+							<div class="name-suggestions absolute z-10 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700" role="listbox"></div>
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Brand</label>
+							<input name="brand" type="text" maxlength="120" autocomplete="off" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. Stanley">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Size or variant</label>
+							<input name="size" type="text" maxlength="120" autocomplete="off" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="e.g. 16 oz">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Cost price <span aria-hidden="true">*</span></label>
+							<input name="costPrice" type="number" min="0" step="0.01" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="0.00">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Selling price <span class="font-normal text-gray-500">(optional)</span></label>
+							<input name="price" type="number" min="0" step="0.01" class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="0.00">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Quantity received <span aria-hidden="true">*</span></label>
+							<input name="count" type="number" min="1" step="1" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="1">
+						</div>
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Low-stock threshold</label>
+							<input name="lowStock" type="number" min="1" step="1" value="5" required class="block w-full rounded-md border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Show this product when quantity drops below this value.</p>
+						</div>
+					</div>
+				</fieldset>
+			</template>
+
+			<p id="form-feedback" class="text-sm" role="status" aria-live="polite"></p>
+			<div class="flex flex-wrap justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
+				<a th:href="@{/}" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</a>
+				<button id="add-product-button" type="button" aria-label="Add another product" title="Add another product" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-700 text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-gray-700">
+					<i class="fa-solid fa-plus" aria-hidden="true"></i>
+				</button>
+				<button id="submit-button" type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-blue-900">
+					<i class="fa-solid fa-plus" aria-hidden="true"></i>
+					Save product
+				</button>
+			</div>
+		</form>
+	<script>
+		const addItemForm = document.querySelector("#add-item-form");
+		const feedback = document.querySelector("#form-feedback");
+		const submitButton = document.querySelector("#submit-button");
+		const addProductButton = document.querySelector("#add-product-button");
+		const productRows = document.querySelector("#product-rows");
+		const productRowTemplate = document.querySelector("#product-row-template");
+		const suggestionTimers = new WeakMap();
+		const suggestionRequests = new WeakMap();
+		const activeSuggestionIndexes = new WeakMap();
+
+		function closeSuggestions(input) {
+			const suggestionList = input.closest(".name-field").querySelector(".name-suggestions");
+			suggestionList.replaceChildren();
+			suggestionList.classList.add("hidden");
+			input.setAttribute("aria-expanded", "false");
+			activeSuggestionIndexes.delete(input);
+		}
+
+		function setActiveSuggestion(input, index) {
+			const options = [...input.closest(".name-field").querySelectorAll(".name-suggestion")];
+			if (!options.length) return;
+			const activeIndex = (index + options.length) % options.length;
+			activeSuggestionIndexes.set(input, activeIndex);
+			options.forEach((option, optionIndex) => {
+				const isActive = optionIndex === activeIndex;
+				option.setAttribute("aria-selected", String(isActive));
+				option.classList.toggle("bg-blue-50", isActive);
+				option.classList.toggle("dark:bg-gray-600", isActive);
+			});
+			options[activeIndex].scrollIntoView({ block: "nearest" });
+		}
+
+		function renderSuggestions(input, items) {
+			const suggestionList = input.closest(".name-field").querySelector(".name-suggestions");
+			suggestionList.replaceChildren();
+
+			items.forEach((item) => {
+				const option = document.createElement("button");
+				option.type = "button";
+				option.setAttribute("role", "option");
+				option.setAttribute("aria-selected", "false");
+				option.className = "name-suggestion block w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-600";
+
+				const productName = document.createElement("span");
+				productName.className = "block font-medium";
+				productName.textContent = item.name;
+				option.append(productName);
+
+				const details = [item.brand, item.size].filter(Boolean).join(" / ");
+				if (details) {
+					const productDetails = document.createElement("span");
+					productDetails.className = "mt-0.5 block text-xs text-gray-500 dark:text-gray-400";
+					productDetails.textContent = details;
+					option.append(productDetails);
+				}
+
+				option.addEventListener("click", () => {
+					input.value = item.name;
+					const row = input.closest(".product-row");
+					row.querySelector('[name="brand"]').value = item.brand ?? "";
+					row.querySelector('[name="size"]').value = item.size ?? "";
+					closeSuggestions(input);
+					input.focus();
+				});
+				suggestionList.append(option);
+			});
+
+			suggestionList.classList.toggle("hidden", items.length === 0);
+			input.setAttribute("aria-expanded", String(items.length > 0));
+			activeSuggestionIndexes.delete(input);
+		}
+
+		function updateProductRows() {
+			const rows = [...productRows.querySelectorAll(".product-row")];
+			rows.forEach((row, index) => {
+				row.querySelector(".product-number").textContent = `Product ${index + 1}`;
+				const nameInput = row.querySelector('[name="name"]');
+				const inputId = `product-name-${index + 1}`;
+				const suggestionId = `product-name-suggestions-${index + 1}`;
+				nameInput.id = inputId;
+				nameInput.setAttribute("aria-controls", suggestionId);
+				row.querySelector(".product-name-label").htmlFor = inputId;
+				row.querySelector(".name-suggestions").id = suggestionId;
+				const removeButton = row.querySelector(".remove-product");
+				removeButton.disabled = rows.length === 1;
+				removeButton.setAttribute("aria-label", `Remove product ${index + 1}`);
+			});
+		}
+
+		updateProductRows();
+
+		addProductButton.addEventListener("click", () => {
+			productRows.append(productRowTemplate.content.cloneNode(true));
+			updateProductRows();
+			productRows.lastElementChild.querySelector('[name="name"]').focus();
+		});
+
+		productRows.addEventListener("click", (event) => {
+			const removeButton = event.target.closest(".remove-product");
+			if (!removeButton || removeButton.disabled) return;
+			removeButton.closest(".product-row").remove();
+			updateProductRows();
+		});
+
+		productRows.addEventListener("input", (event) => {
+			const input = event.target;
+			if (input.matches('.product-row [name="costPrice"]')) {
+				const row = input.closest(".product-row");
+				const priceInput = row.querySelector('[name="price"]');
+				if (!priceInput.value || priceInput.dataset.autoGenerated === "true") {
+					const costPrice = Number(input.value);
+					priceInput.value = Number.isFinite(costPrice)
+						? (Math.round(costPrice * 1.3 * 100) / 100).toFixed(2)
+						: "";
+					priceInput.dataset.autoGenerated = "true";
+				}
+				return;
+			}
+			if (input.matches('.product-row [name="price"]')) {
+				input.dataset.autoGenerated = "false";
+				return;
+			}
+			if (!input.matches('.product-row [name="name"]')) return;
+
+			clearTimeout(suggestionTimers.get(input));
+			suggestionRequests.get(input)?.abort();
+
+			const query = input.value.trim();
+			if (query.length < 3) {
+				closeSuggestions(input);
+				return;
+			}
+
+			suggestionTimers.set(input, setTimeout(async () => {
+				const request = new AbortController();
+				suggestionRequests.set(input, request);
+				try {
+					const url = new URL(addItemForm.dataset.suggestionsUrl, window.location.origin);
+					url.searchParams.set("name", query);
+					const response = await fetch(url, { signal: request.signal });
+					if (!response.ok) throw new Error("Suggestion request failed");
+					const items = await response.json();
+					if (input.value.trim() === query) renderSuggestions(input, items);
+				} catch (error) {
+					if (error.name !== "AbortError") closeSuggestions(input);
+				}
+			}, 250));
+		});
+
+		productRows.addEventListener("keydown", (event) => {
+			const input = event.target;
+			if (!input.matches('.product-row [name="name"]')) return;
+			const suggestionList = input.closest(".name-field").querySelector(".name-suggestions");
+			if (suggestionList.classList.contains("hidden")) return;
+
+			const activeIndex = activeSuggestionIndexes.get(input) ?? -1;
+			if (event.key === "ArrowDown") {
+				event.preventDefault();
+				setActiveSuggestion(input, activeIndex + 1);
+			} else if (event.key === "ArrowUp") {
+				event.preventDefault();
+				setActiveSuggestion(input, activeIndex < 0 ? suggestionList.children.length - 1 : activeIndex - 1);
+			} else if (event.key === "Enter" && activeIndex >= 0) {
+				event.preventDefault();
+				suggestionList.children[activeIndex]?.click();
+			} else if (event.key === "Escape") {
+				closeSuggestions(input);
+			}
+		});
+
+		addItemForm.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			const items = [...productRows.querySelectorAll(".product-row")].map((row) => {
+				const value = (name) => row.querySelector(`[name="${name}"]`).value;
+				return {
+					name: value("name").trim(),
+					brand: value("brand").trim(),
+					size: value("size").trim(),
+					costPrice: Number(value("costPrice")) || 0,
+					price: Number(value("price")),
+					count: Number(value("count")),
+					lowStock: Number(value("lowStock"))
+				};
+			});
+
+			submitButton.disabled = true;
+			addProductButton.disabled = true;
+			productRows.querySelectorAll(".remove-product").forEach((button) => button.disabled = true);
+			feedback.textContent = `Saving ${items.length} product${items.length === 1 ? "" : "s"}...`;
+			feedback.className = "text-sm text-gray-600 dark:text-gray-400";
+
+			try {
+				const response = await fetch(addItemForm.action, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(items)
+				});
+
+				if (!response.ok) {
+					throw new Error(`Save failed (HTTP ${response.status}).`);
+				}
+
+				window.location.assign(addItemForm.dataset.homeUrl);
+			} catch (error) {
+				feedback.textContent = error.message || "The product could not be saved. Check the connection and try again.";
+				feedback.className = "text-sm text-red-700 dark:text-red-400";
+				submitButton.disabled = false;
+				addProductButton.disabled = false;
+				updateProductRows();
+			}
+		});
+	</script>
+	</section>
+</body>
+</html>

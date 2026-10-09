@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base :: parent(~{::content})}">
+<head>
+    <title>Customer Details | Bhagwani Hardware</title>
+</head>
+<body>
+    <section th:fragment="content">
+        <div class="mb-6 flex items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Customer Details</h1>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a th:href="@{/bill/create(customerId=${customer.mobileNo},billType='sale')}"
+                   class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+                    <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                    Create bill
+                </a>
+                <a th:href="@{/bill/create(customerId=${customer.mobileNo},billType='returnItem')}"
+                   class="inline-flex items-center gap-2 rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    Return option
+                </a>
+            </div>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Profile</h2>
+
+                <dl class="mt-5 space-y-4 text-sm">
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Name</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.name}">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Mobile Number</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.mobileNo}">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Address</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.address != null ? customer.address : 'N/A'}">-</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Payment Summary</h2>
+
+                <dl class="mt-5 space-y-4 text-sm">
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Total</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.total}">0</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Amount Paid</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.amountPaid}">0</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Payment Pending</dt>
+                        <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.amountPending}">0</dd>
+                    </div>
+                </dl>
+
+                <div th:if="${paymentSuccess}" class="mt-5 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800" th:text="${paymentSuccess}"></div>
+                <div th:if="${paymentError}" class="mt-5 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" th:text="${paymentError}"></div>
+
+                <div class="mt-6 border-t border-gray-200 pt-5 dark:border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Record transaction</h3>
+                    <div class="mt-3 flex flex-wrap gap-3">
+                        <button type="button" data-transaction-type="recieved" data-transaction-label="You got"
+                                class="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800">
+                            You got
+                        </button>
+                        <button type="button" data-transaction-type="refund" data-transaction-label="You gave"
+                                class="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
+                            You gave
+                        </button>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Choose an option to enter the amount.</p>
+                </div>
+
+                <dialog id="transactionAmountDialog" class="w-[min(24rem,calc(100%-2rem))] rounded-lg border border-green-200 bg-green-50 p-0 shadow-xl backdrop:bg-slate-900/50 dark:border-green-800 dark:bg-green-950">
+                    <form th:action="@{/customer/payAmount/{customerId}(customerId=${customer.mobileNo})}" method="post" class="p-6">
+                        <h3 id="transactionDialogTitle" class="text-lg font-semibold text-gray-900 dark:text-white">Record transaction</h3>
+                        <label for="paymentAmount" class="mt-5 mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
+                        <input id="paymentAmount" name="amount" type="number" min="0.01" step="0.01" required
+                               class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                               placeholder="Enter amount">
+                        <input id="transactionType" name="transactionType" type="hidden" value="recieved">
+                        <div class="mt-6 flex justify-end gap-3">
+                            <button type="button" id="cancelTransactionDialog"
+                                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                                Cancel
+                            </button>
+                            <button id="submitTransactionButton" type="submit"
+                                    class="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800">
+                                Record
+                            </button>
+                        </div>
+                    </form>
+                </dialog>
+            </div>
+        </div>
+
+        <section class="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transactions</h2>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"
+                       th:text="${dateRangeSelected ? 'Transactions from ' + #temporals.format(fromDate, 'dd MMM yyyy') + ' through ' + #temporals.format(toDate, 'dd MMM yyyy') : 'Showing all transactions'}">
+                        Showing all transactions
+                    </p>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <span th:text="${#lists.size(transactions)}">0</span> total
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Type</th>
+                            <th scope="col" class="px-5 py-3">Time</th>
+                            <th scope="col" class="px-5 py-3">Bill ID</th>
+                            <th scope="col" class="px-5 py-3">Amount</th>
+                            <th scope="col" class="px-5 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(transactions)}">
+                            <td colspan="5" class="px-5 py-12 text-center">
+                                <p class="font-semibold text-gray-900 dark:text-white">No transactions found</p>
+                                <p class="mt-1">This customer has no transaction history yet.</p>
+                            </td>
+                        </tr>
+
+                        <tr th:each="transaction : ${transactions}" class="border-t border-gray-200 dark:border-gray-700"
+                            th:classappend="${transaction.transactionType != null and transaction.transactionType.name() == 'recieved' ? 'bg-green-200 dark:bg-green-900/40' : transaction.transactionType != null and transaction.transactionType.name() == 'itemReturn' ? 'bg-gray-200 dark:bg-gray-700' : transaction.transactionType != null and (transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'refund') ? 'bg-red-200 dark:bg-red-900/40' : ''}">
+                            <td class="px-5 py-4 font-medium text-gray-900 dark:text-white" th:text="${transaction.transactionType != null and transaction.transactionType.name() == 'itemReturn' ? 'Return' : transaction.transactionType}">sale</td>
+                            <td class="px-5 py-4" th:text="${#dates.format(transaction.creatDate, 'dd-MM-yyyy HH:mm:ss')}">-</td>
+                            <td class="px-5 py-4" th:text="${transaction.billNo}">-</td>
+                            <td class="px-5 py-4" th:text="${transaction.amount}">0</td>
+                            <td class="px-5 py-4">
+                                <a th:if="${transaction.transactionType != null and (transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'itemReturn')}"
+                                   th:href="@{/bill/{billNo}(billNo=${transaction.billNo})}"
+                                   class="inline-flex min-w-28 items-center justify-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                                    <span th:text="${transaction.transactionType.name() == 'itemReturn' ? 'View Return' : 'View Bill'}">View Bill</span>
+                                </a>
+                                <form th:if="${transaction.transactionType != null and transaction.billNo == null and (transaction.transactionType.name() == 'recieved' or transaction.transactionType.name() == 'refund')}"
+                                      th:action="@{/customer/{mobileNo}/transactions/{transactionId}/delete(mobileNo=${customer.mobileNo},transactionId=${transaction.transactionId})}"
+                                      method="post"
+                                      onsubmit="return confirm('Delete this payment transaction? The customer balances will be adjusted.');">
+                                    <input th:if="${fromDate != null}" type="hidden" name="fromDate"
+                                           th:value="${#temporals.format(fromDate, 'yyyy-MM-dd')}">
+                                    <input th:if="${toDate != null}" type="hidden" name="toDate"
+                                           th:value="${#temporals.format(toDate, 'yyyy-MM-dd')}">
+                                    <button type="submit"
+                                            class="inline-flex min-w-28 items-center justify-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                                        Delete
+                                    </button>
+                                </form>
+                                <span th:unless="${transaction.transactionType != null and ((transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'itemReturn') or (transaction.billNo == null and (transaction.transactionType.name() == 'recieved' or transaction.transactionType.name() == 'refund')))}"
+                                      class="text-gray-400 dark:text-gray-500">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+</body>
+</html>

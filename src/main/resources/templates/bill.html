@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+	  th:replace="~{base :: parent(~{::content})}">
+<head>
+	<title>Bills | Bhagwani Hardware</title>
+</head>
+<body>
+	<section th:fragment="content" class="mx-auto max-w-7xl">
+		<div class="flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<h1 class="text-3xl font-bold text-gray-900 dark:text-white"
+					th:text="${billListType == 'sale' ? 'Sale bills' : (billListType == 'return' ? 'Return bills' : 'All bills')}">All bills</h1>
+				<p class="mt-2 text-gray-600 dark:text-gray-400"
+				   th:text="${dateRangeSelected ? (billListType == 'return' ? 'Return bills from ' : 'Bills from ') + #temporals.format(fromDate, 'dd MMM yyyy') + ' through ' + #temporals.format(toDate, 'dd MMM yyyy') : 'Showing all dates.'}">Showing all dates.</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-3">
+				<a th:href="@{/bill}" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">All bills</a>
+				<a th:href="@{/bill/sales}" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Sale bills</a>
+				<a th:href="@{/bill/returns}" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Return bills</a>
+				<a th:href="@{/bill/create}" class="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">Create bill</a>
+			</div>
+		</div>
+		<div class="mt-8 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+			<table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+				<thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+					<tr>
+						<th scope="col" class="px-5 py-3">Bill number</th>
+						<th scope="col" class="px-5 py-3">Date</th>
+						<th scope="col" class="px-5 py-3">Customer</th>
+						<th scope="col" class="px-5 py-3">Mobile</th>
+						<th scope="col" class="px-5 py-3">Type</th>
+						<th scope="col" class="px-5 py-3 text-right">Total</th>
+						<th scope="col" class="px-5 py-3 text-right">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:if="${#lists.isEmpty(bills)}">
+						<td colspan="7" class="px-5 py-10 text-center"
+							th:text="${dateRangeSelected ? (billListType == 'sale' ? 'No sale bills were created during the selected dates.' : (billListType == 'return' ? 'No return bills were recorded during the selected dates.' : 'No bills were created during the selected dates.')) : (billListType == 'sale' ? 'No sale bills have been created yet.' : (billListType == 'return' ? 'No return bills have been recorded yet.' : 'No bills have been created yet.'))}">No bills found.</td>
+					</tr>
+					<tr th:each="bill : ${bills}" class="border-t border-gray-200 dark:border-gray-700"
+						th:classappend="${bill.billType != null and bill.billType.name() == 'returnItem' ? 'bg-red-100 dark:bg-red-900/40' : ''}">
+						<td class="px-5 py-4 font-mono text-xs" th:text="${bill.billNo}">Bill number</td>
+						<td class="px-5 py-4" th:text="${bill.createdAt != null ? #temporals.format(bill.createdAt, 'dd MMM yyyy, HH:mm') : ''}">Date</td>
+						<td class="px-5 py-4 font-medium text-gray-900 dark:text-white" th:text="${bill.customerName}">Customer</td>
+						<td class="px-5 py-4" th:text="${bill.mobileNumber}">Mobile</td>
+						<td class="px-5 py-4" th:text="${bill.billType != null and bill.billType.name() == 'returnItem' ? 'Return Bill' : 'Sale Bill'}">Sale Bill</td>
+						<td class="px-5 py-4 text-right font-semibold" th:text="${#numbers.formatDecimal(bill.total, 1, 2)}">0.00</td>
+						<td class="px-5 py-4 text-right">
+							<a th:href="@{/bill/{billNo}(billNo=${bill.billNo})}" class="font-medium text-blue-700 hover:underline dark:text-blue-400">View / print</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+</body>
+</html>

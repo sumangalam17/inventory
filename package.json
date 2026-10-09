@@ -1,0 +1,18 @@
+{
+  "name": "inventory",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start" : "npx @tailwindcss/cli -i ./src/main/resources/static/CSS/input.css -o ./src/main/resources/static/CSS/output.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "flowbite": "^4.0.2",
+    "tailwindcss": "^4.3.3"
+  }
+}

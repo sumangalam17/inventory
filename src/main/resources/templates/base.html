@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html 
+    class="light"
+    lang="en" 
+    th:fragment="parent(content)"
+    xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Page</title>
+    <link th:href="@{/CSS/output.css}" rel="stylesheet" />
+    <link th:href="@{/CSS/style.css}" rel="stylesheet" />
+    <link th:href="@{/CSS/dashboard.css}" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css" integrity="sha512-ApSLB1Pd3/bZN8fWB/RG9YhN/7bd9Hkf3AGaE2mPfebjrxagjuBtx2GcgdqIlJkUzwylBo61r9Xa9NmgBI0swA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="dark:bg-gray-900">
+    <div class="dashboard-shell">
+        <aside class="dashboard-sidebar" aria-label="Dashboard navigation">
+            <div class="dashboard-brand">Bhagwani Hardware</div>
+            <nav class="side-nav" aria-label="Main navigation">
+                <a th:href="@{/dashboard}" class="active"><i class="fa-solid fa-house"></i><span>Home</span></a>
+                <a th:href="@{/customers}"><i class="fa-solid fa-users"></i><span>Customers</span></a>
+                <a th:href="@{/inventory}"><i class="fa-solid fa-boxes-stacked"></i><span>Inventory</span></a>
+                <a th:href="@{/low-stock}"><i class="fa-solid fa-triangle-exclamation"></i><span>Low stock</span></a>
+                <a th:href="@{/add}"><i class="fa-solid fa-box-open"></i><span>New item</span></a>
+                <a th:href="@{/bill/sale}"><i class="fa-solid fa-receipt"></i><span>Create bill</span></a>
+                <a th:href="@{/bill}"><i class="fa-solid fa-file-invoice"></i><span>All bills</span></a>
+                <a th:href="@{/purchase-list}"><i class="fa-solid fa-cart-shopping"></i><span>Purchase list</span></a>
+                <a th:href="@{/add-to-stock}"><i class="fa-solid fa-boxes-packing"></i><span>Add to stock</span></a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <form th:if="${dateFilterAction != null}" class="date-filter" th:action="@{${dateFilterAction}}" method="get" aria-label="Filter by date range">
+                    <label>
+                        <span>From</span>
+                        <input type="date" name="fromDate"
+                               th:value="${fromDate != null ? #temporals.format(fromDate, 'yyyy-MM-dd') : ''}">
+                    </label>
+                    <label>
+                        <span>To</span>
+                        <input type="date" name="toDate"
+                               th:value="${toDate != null ? #temporals.format(toDate, 'yyyy-MM-dd') : ''}">
+                    </label>
+                    <button type="submit" class="date-filter-button">Filter</button>
+                    <a th:href="@{${dateFilterAction}}" class="date-filter-reset">All dates</a>
+                </form>
+                <form th:if="${searchAction != null}" class="search-box" th:action="@{${searchAction}}" method="get" role="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" name="q" placeholder="Search inventory" aria-label="Search inventory"
+                           th:value="${searchTerm}">
+                    <button type="submit">Search</button>
+                </form>
+
+            </header>
+
+            <div class="dashboard-content" th:insert="${content}"></div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"></script>
+    <script data-th-src="@{/js/script.js}"></script>
+    <script>
+        let pendingConfirmedSubmitter = null;
+        document.querySelectorAll("[data-confirm-dialog]").forEach((button) => {
+            button.addEventListener("click", (event) => {
+                event.preventDefault();
+                const dialog = document.querySelector(button.dataset.confirmDialog);
+                if (!dialog || !button.form) {
+                    console.error("The confirmation dialog or associated form could not be found.");
+                    return;
+                }
+                pendingConfirmedSubmitter = button;
+                dialog.showModal();
+            });
+        });
+        document.querySelectorAll("[data-confirm-accept]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const dialog = button.closest("dialog");
+                dialog?.close();
+                if (!pendingConfirmedSubmitter?.form) {
+                    console.error("There is no pending form to confirm.");
+                    return;
+                }
+                const submitter = pendingConfirmedSubmitter;
+                pendingConfirmedSubmitter = null;
+                submitter.form.requestSubmit(submitter);
+            });
+        });
+        document.querySelectorAll("[data-confirm-cancel]").forEach((button) => {
+            button.addEventListener("click", () => {
+                button.closest("dialog")?.close();
+                pendingConfirmedSubmitter = null;
+            });
+        });
+
+        document.querySelectorAll("[data-purchase-list-form]").forEach((form) => {
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const button = form.querySelector("button");
+                const icon = button.querySelector("i");
+                const feedback = document.querySelector("[data-purchase-list-feedback]");
+                const wasInList = button.dataset.itemInList === "true";
+                button.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+                        body: new URLSearchParams(new FormData(form))
+                    });
+                    if (!response.ok) {
+                        throw new Error(`Could not ${wasInList ? "remove the item from" : "add the item to"} the purchase list (HTTP ${response.status}).`);
+                    }
+
+                    const isInList = !wasInList;
+                    button.dataset.itemInList = String(isInList);
+                    form.action = isInList ? "/purchase-list/remove" : "/purchase-list/add";
+                    button.setAttribute("aria-label", isInList ? "Remove from purchase list" : "Add to purchase list");
+                    button.title = isInList ? "Remove from purchase list" : "Add to purchase list";
+                    icon.className = isInList ? "fa-solid fa-trash-can" : "fa-solid fa-cart-plus";
+                    button.classList.toggle("text-red-700", isInList);
+                    button.classList.toggle("hover:bg-red-50", isInList);
+                    button.classList.toggle("dark:text-red-400", isInList);
+                    button.classList.toggle("text-blue-700", !isInList);
+                    button.classList.toggle("hover:bg-blue-50", !isInList);
+                    button.classList.toggle("dark:text-blue-400", !isInList);
+
+                    if (feedback) {
+                        feedback.textContent = isInList ? "Added to purchase list." : "Removed from purchase list.";
+                        feedback.className = "mt-3 text-sm text-green-700 dark:text-green-400";
+                    }
+                } catch (error) {
+                    if (feedback) {
+                        feedback.textContent = error.message;
+                        feedback.className = "mt-3 text-sm text-red-700 dark:text-red-400";
+                    } else {
+                        console.error(error);
+                    }
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
+
+        const transactionDialog = document.getElementById("transactionAmountDialog");
+        const transactionTypeInput = document.getElementById("transactionType");
+        const transactionDialogTitle = document.getElementById("transactionDialogTitle");
+        const submitTransactionButton = document.getElementById("submitTransactionButton");
+        const paymentAmountInput = document.getElementById("paymentAmount");
+        const cancelTransactionDialog = document.getElementById("cancelTransactionDialog");
+
+        if (transactionDialog && transactionTypeInput && transactionDialogTitle
+                && submitTransactionButton && paymentAmountInput && cancelTransactionDialog) {
+            document.querySelectorAll("[data-transaction-type]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const isPayment = button.dataset.transactionType === "refund";
+                    transactionTypeInput.value = button.dataset.transactionType;
+                    transactionDialogTitle.textContent = `${button.dataset.transactionLabel} — enter amount`;
+                    submitTransactionButton.textContent = button.dataset.transactionLabel;
+                    transactionDialog.classList.toggle("bg-red-50", isPayment);
+                    transactionDialog.classList.toggle("dark:bg-red-950", isPayment);
+                    transactionDialog.classList.toggle("border-red-200", isPayment);
+                    transactionDialog.classList.toggle("dark:border-red-800", isPayment);
+                    transactionDialog.classList.toggle("bg-green-50", !isPayment);
+                    transactionDialog.classList.toggle("dark:bg-green-950", !isPayment);
+                    transactionDialog.classList.toggle("border-green-200", !isPayment);
+                    transactionDialog.classList.toggle("dark:border-green-800", !isPayment);
+                    submitTransactionButton.classList.toggle("bg-red-700", isPayment);
+                    submitTransactionButton.classList.toggle("hover:bg-red-800", isPayment);
+                    submitTransactionButton.classList.toggle("bg-green-700", !isPayment);
+                    submitTransactionButton.classList.toggle("hover:bg-green-800", !isPayment);
+                    paymentAmountInput.value = "";
+                    transactionDialog.showModal();
+                    paymentAmountInput.focus();
+                });
+            });
+
+            cancelTransactionDialog.addEventListener("click", () => transactionDialog.close());
+        }
+    </script>
+</body>
+</html>

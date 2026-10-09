@@ -1,0 +1,90 @@
+.dashboard-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+	.dashboard-layout {
+		grid-template-columns: 14rem minmax(0, 1fr);
+		gap: 2rem;
+	}
+}
+
+.dashboard-nav-current {
+	background-color: #eaf4fb;
+	color: #007acc;
+}
+
+.dashboard-nav-link:hover {
+	background-color: #f3f4f6;
+	color: #007acc;
+}
+
+.dashboard-metric {
+	border-left: 4px solid;
+}
+
+.dashboard-accent-blue {
+	border-left-color: #007acc;
+}
+
+.dashboard-accent-gray {
+	border-left-color: #667085;
+}
+
+.dashboard-navigation-toggle {
+	align-items: center;
+	background: #f3f4f6;
+	border: 1px solid #d1d5db;
+	border-radius: 0.375rem;
+	color: #374151;
+	cursor: pointer;
+	display: flex;
+	font-size: 0.875rem;
+	font-weight: 600;
+	justify-content: space-between;
+	padding: 0.75rem 1rem;
+}
+
+.dashboard-navigation-toggle::-webkit-details-marker {
+	display: none;
+}
+
+.dashboard-navigation[open] .dashboard-navigation-toggle i {
+	transform: rotate(180deg);
+}
+
+.dashboard-navigation-content {
+	margin-top: 0.75rem;
+}
+
+.sale-rows-list {
+	overflow-x: auto;
+}
+
+.sale-row-layout {
+	align-items: start;
+	grid-template-columns: minmax(14rem, 1fr) 5rem 7rem 7rem 2.5rem;
+	min-width: 36rem;
+}
+
+.sale-row-layout .remove-sale-row {
+	align-self: center;
+	margin-bottom: 0;
+}
+
+.sale-suggestions-overlay {
+	position: fixed;
+	z-index: 1000;
+}
+
+@media (min-width: 768px) {
+	.dashboard-navigation-toggle {
+		display: none;
+	}
+
+	.dashboard-navigation-content {
+		margin-top: 0;
+	}
+}
