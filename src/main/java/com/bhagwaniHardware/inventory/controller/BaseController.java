@@ -192,13 +192,20 @@ public class BaseController {
 
     @PostMapping("/inventory/edit")
     public String editItem(@RequestParam String itemId,
+                           @RequestParam String name,
+                           @RequestParam String brand,
+                           @RequestParam String size,
                            @RequestParam double costPrice,
-                           @RequestParam(required = false) Double price,
+                           @RequestParam Double sellingPrice,
                            @RequestParam int count,
                            @RequestParam int lowStock,
                            RedirectAttributes redirectAttributes) {
         try {
-            itemService.editItem(itemId, costPrice, price, count, lowStock);
+            Item item = itemService.findById(itemId).get();
+            if(item.getName() != name || item.getBrand() != brand || item.getSize() != size){
+                itemService.editItem(itemId, name, brand, size, costPrice, sellingPrice, count, lowStock);
+            }
+            else itemService.editItem(itemId, costPrice, sellingPrice, count, lowStock);
             redirectAttributes.addFlashAttribute("successMessage", "Inventory item updated.");
             return "redirect:/inventory";
         } catch (IllegalArgumentException exception) {
@@ -221,8 +228,9 @@ public class BaseController {
 
     @PostMapping("/add")
     @ResponseBody
-    public List<Item> postAddStock(@RequestBody List<Item> item){
-        return itemService.addStock(item);
+    public String postAddStock(@RequestBody List<Item> item,RedirectAttributes redirectAttributes){
+        itemService.addStock(item);
+        return "redirect:/inventory";
     }
 
     @PostMapping("/update")
@@ -245,4 +253,12 @@ public class BaseController {
     public List<Item> getProductSuggestion(@RequestParam("name") String name){
         return itemService.findProductByName(name);
     }
+
+    @PostMapping("/inventory/remove")
+    public String removeItem(@RequestParam String itemId, RedirectAttributes redirectAttributes) {
+        itemService.deleteProductbyId(itemId);
+        redirectAttributes.addFlashAttribute("successMessage", "Inventory item removed.");
+        return "redirect:/inventory";
+    }
+    
 }

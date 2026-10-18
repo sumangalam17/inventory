@@ -38,7 +38,6 @@
 							<th scope="col" class="px-5 py-3">Size</th>
 							<th scope="col" class="px-5 py-3">Cost price</th>
 							<th scope="col" class="px-5 py-3">Selling price</th>
-							<th scope="col" class="px-5 py-3 text-right">Low-stock threshold</th>
 							<th scope="col" class="px-5 py-3 text-right">On hand</th>
 							<th scope="col" class="px-5 py-3 text-right">Action</th>
 							<th scope="col" class="px-5 py-3 text-right">Purchase list</th>
@@ -63,13 +62,19 @@
 								</select>
 							</td>
 							<td class="whitespace-nowrap px-5 py-4" th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</td>
-							<td class="px-5 py-4 text-right" th:text="${item.lowStock}">5</td>
 							<td class="px-5 py-4 text-right font-medium" th:text="${item.count}">0</td>
 							<td class="px-5 py-4 text-right">
+								<div class="flex flex-wrap justify-end gap-2">
 								<a th:href="@{/inventory/edit(itemId=${item.itemId})}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
 									<i class="fa-solid fa-pen" aria-hidden="true"></i>
-									Edit
 								</a>
+								<form th:action="@{/inventory/remove}" method="post">
+									<input type="hidden" name="itemId" th:value="${item.itemId}">
+									<button type="submit" data-confirm-dialog="#delete-item-dialog" class="inline-flex items-center gap-2 rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-300 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950">
+										<i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+									</button>
+								</form>
+								</div>
 							</td>
 							<td class="px-5 py-4 text-right">
 								<form th:action="${purchaseItemIds.contains(item.itemId) ? '/purchase-list/remove' : '/purchase-list/add'}" method="post" data-purchase-list-form>
@@ -86,6 +91,17 @@
 				</table>
 			</div>
 		</section>
+
+		<dialog id="delete-item-dialog" class="m-auto w-[min(92vw,30rem)] rounded-xl border border-red-200 bg-white p-0 text-gray-900 shadow-2xl backdrop:bg-gray-950/50 dark:border-red-800 dark:bg-gray-900 dark:text-white">
+			<div class="p-6">
+				<h2 class="text-xl font-semibold text-red-700 dark:text-red-300">Remove this item?</h2>
+				<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">This will permanently remove the selected item from your inventory.</p>
+				<div class="mt-6 flex justify-end gap-3">
+					<button type="button" data-confirm-cancel class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">Cancel</button>
+					<button type="button" data-confirm-accept class="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300">Remove item</button>
+				</div>
+			</div>
+		</dialog>
 	</section>
 </body>
 </html>

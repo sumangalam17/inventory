@@ -1,14 +1,16 @@
 package com.bhagwaniHardware.inventory.services;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bhagwaniHardware.inventory.dao.ItemDao;
 import com.bhagwaniHardware.inventory.model.Item;
+
+import jakarta.transaction.Transactional;
 
 @Service 
 public class ItemService {
@@ -53,7 +55,7 @@ public class ItemService {
 
         itemCostHistoryService.recordIfChanged(itemId, item.getCostPrice());
         item.setCostPrice(costPrice);
-        item.setPrice(price == null ? 0 : price);
+        item.setPrice(price == null ? (costPrice * 130 / 100) : price);
         item.setCount(count);
         item.setLowStock(lowStock);
         Item savedItem = itemDao.save(item);
@@ -61,12 +63,39 @@ public class ItemService {
         return savedItem;
     }
 
+    @Transactional
+    public void editItem(String itemId, String name, String brand, String size, double costPrice, Double sellingPrice,
+            int count, int lowStock) {
+
+        itemDao.deleteById(itemId);
+
+        Item item = new Item();
+        item.setName(name);
+        item.setBrand(brand);
+        item.setSize(size);
+        item.setItemId(brand + " " + name + " " + size);
+        item.setCostPrice(costPrice);
+        item.setPrice(sellingPrice);
+        item.setCount(count);
+        item.setLowStock(lowStock);
+        
+        itemDao.save(item);
+        itemCostHistoryService.recordIfChanged(item.getItemId(), item.getCostPrice());
+
+    }
+    
     public List<Item> addStock(List<Item> item){
         for(int i=0;i<item.size();i++){
             Item product = item.get(i);
-            product.setItemId(product.getBrand() + " " + product.getName() + " " + product.getSize());
+            String itemId = product.getBrand() + " " + product.getName() + " " + product.getSize();
+            
+            product.setItemId(itemId);
+            Optional<Item> currItem = itemDao.findById(itemId);
+            if(currItem.isPresent()){
+                product.setCount(product.getCount() + currItem.get().getCount());
+            }
             itemDao.findById(product.getItemId())
-                    .ifPresent(existing -> itemCostHistoryService.recordIfChanged(existing.getItemId(), existing.getCostPrice()));
+                    .ifPresent(existing -> updateStock(Arrays.asList(existing)));
             if (product.getPrice() <= 0 && product.getCostPrice() > 0) {
                 product.setPrice(Math.round(product.getCostPrice() * 1.3 * 100) / 100.0);
             }
@@ -79,6 +108,7 @@ public class ItemService {
         return savedItems;
     }
 
+    @Transactional
     public List<Item> updateStock(List<Item> item){
         for(int i=0;i<item.size();i++){
             Item curr = item.get(i);
@@ -86,6 +116,7 @@ public class ItemService {
             if(temp.isPresent())curr.setCount(curr.getCount() + temp.get().getCount());
             item.set(i, curr);
             itemDao.save(curr);
+            itemCostHistoryService.recordIfChanged(curr.getItemId(), curr.getCostPrice());
         }
         return item;   
     }
@@ -118,5 +149,10 @@ public class ItemService {
     public List<Item> findProductByName(String name){
         if(name.length()<3) return new ArrayList<>();
         return itemDao.findTop8ByNameContainingIgnoreCaseOrderByNameAsc(name);
+    }
+
+    public String deleteProductbyId(String id){
+        itemDao.deleteById(id);
+        return id + " deleted successfully";
     }
 }
