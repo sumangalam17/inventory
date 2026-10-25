@@ -15,6 +15,13 @@
 				<i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
 				Print bill
 			</a>
+			<a id="whatsappBillSummary" href="#"
+			   th:attr="data-phone=${bill.mobileNumber},data-customer-name=${bill.customerName},data-total-items=${#lists.size(bill.items)},data-total=${bill.total}"
+			   target="_blank" rel="noopener noreferrer"
+			   class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
+				<i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+				Send on WhatsApp
+			</a>
 		</div>
 
 		<article class="bg-white p-6 text-gray-900 dark:bg-gray-800 dark:text-white sm:p-10 print:p-0">
@@ -102,6 +109,31 @@
 				</div>
 			</div>
 		</dialog>
+		<script>
+			const whatsappBillSummary = document.getElementById("whatsappBillSummary");
+			if (whatsappBillSummary) {
+				const phone = (whatsappBillSummary.dataset.phone || "").replace(/\D/g, "");
+				const whatsappPhone = phone.length === 10 ? `91${phone}` : phone;
+				const amount = new Intl.NumberFormat("en-IN", {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2
+				}).format(Number(whatsappBillSummary.dataset.total));
+				const message = [
+					`Hello ${whatsappBillSummary.dataset.customerName},`,
+					"",
+					"Thank you for choosing *Bhagwani Hardware*.",
+					"",
+					"*BILL SUMMARY*",
+					`Items: ${whatsappBillSummary.dataset.totalItems}`,
+					`Total: \u20B9${amount}`,
+					"",
+					"We truly appreciate your business.",
+					"",
+					"*Bhagwani Hardware*"
+				].join("\n");
+				whatsappBillSummary.href = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+			}
+		</script>
 	</section>
 	<style>
 		@media print {

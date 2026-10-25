@@ -41,6 +41,23 @@
                         <dt class="text-gray-500 dark:text-gray-400">Address</dt>
                         <dd class="mt-1 font-medium text-gray-900 dark:text-white" th:text="${customer.address != null ? customer.address : 'N/A'}">-</dd>
                     </div>
+                    <div>
+                        <dd class="mt-1">
+                            <a id="whatsappPaymentReminder" href="#"
+                               th:attr="data-phone=${customer.mobileNo},data-customer-name=${customer.name},data-pending=${customer.amountPending}"
+                               target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700">
+                                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                Send payment reminder
+                            </a>
+                            <a th:href="|https://wa.me/${customer.mobileNo}|"
+                               target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700">
+                                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                                chat on whatsapp
+                            </a>
+                        </dd>
+                    </div>
                 </dl>
             </div>
 
@@ -184,6 +201,44 @@
                 </table>
             </div>
         </section>
+        <script>
+            const whatsappReminder = document.getElementById("whatsappPaymentReminder");
+            if (whatsappReminder) {
+                const phone = whatsappReminder.dataset.phone.replace(/\D/g, "");
+                const whatsappPhone = phone.length === 10 ? `91${phone}` : phone;
+                const amount = new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: "INR"
+                }).format(Number(whatsappReminder.dataset.pending));
+                const customerName = whatsappReminder.dataset.customerName;
+                const message = Number(whatsappReminder.dataset.pending) > 0
+                    ? [
+                        `Hello ${customerName},`,
+                        "",
+                        "Thank you for doing business with us.",
+                        "",
+                        `This is a gentle reminder that ${amount} is currently pending on your account.`,
+                        "Whenever convenient, could you please arrange the payment?",
+                        "",
+                        "If you have already paid, please disregard this message.",
+                        "",
+                        "Thank you,",
+                        "Bhagwani Hardware"
+                    ].join("\n")
+                    : [
+                        `Hello ${customerName},`,
+                        "",
+                        "Thank you for doing business with us.",
+                        "",
+                        "Our records currently show no pending balance on your account.",
+                        "Please let us know if you believe any payment is still due.",
+                        "",
+                        "Thank you,",
+                        "Bhagwani Hardware"
+                    ].join("\n");
+                whatsappReminder.href = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+            }
+        </script>
     </section>
 </body>
 </html>
