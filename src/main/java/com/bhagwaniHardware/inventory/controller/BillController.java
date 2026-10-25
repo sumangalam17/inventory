@@ -188,6 +188,29 @@ public class BillController {
         return "billDetail";
     }
 
+    @GetMapping("/{billNo}/edit")
+    public String editBillForm(@PathVariable String billNo, Model model) {
+        Bill bill = billService.getBill(billNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bill not found"));
+        model.addAttribute("existingBill", bill);
+        model.addAttribute("selectedBillType",
+                bill.getBillType() == BillType.returnItem ? BillType.returnItem.name() : BillType.sale.name());
+        return "sell";
+    }
+
+    @PostMapping("/{billNo}/edit")
+    @ResponseBody
+    public String updateBill(@PathVariable String billNo, @RequestBody CreateBillRequest request) {
+        try {
+            billService.updateBill(billNo, request);
+            return "Bill updated";
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage(), exception);
+        }
+    }
+
     @GetMapping(value = "/{billNo}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> downloadBillPdf(@PathVariable String billNo) {
         Bill bill = billService.getBill(billNo)

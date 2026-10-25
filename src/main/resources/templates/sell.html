@@ -8,12 +8,15 @@
 	<section th:fragment="content" class="mx-auto max-w-7xl">
 		<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
 			<div>
-				<h1 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">Create bill</h1>
-				<p class="mt-2 text-gray-600 dark:text-gray-400">Add customer details and products for this sale.</p>
+				<h1 class="mt-2 text-3xl font-bold text-gray-900 dark:text-white"
+					th:text="${existingBill != null ? 'Edit bill' : 'Create bill'}">Create bill</h1>
+				<p class="mt-2 text-gray-600 dark:text-gray-400"
+				   th:text="${existingBill != null ? 'Update customer details, products, quantities, and pricing.' : 'Add customer details and products for this sale.'}">Add customer details and products for this sale.</p>
 			</div>
 		</div>
 
-		<form id="sell-form" th:action="@{/bill/create}" th:attr="data-suggestions-url=@{/getProductSuggestion},data-customer-url=@{/customer}"
+		<form id="sell-form" th:action="${existingBill != null ? '/bill/' + existingBill.billNo + '/edit' : '/bill/create'}"
+			  th:attr="data-suggestions-url=@{/getProductSuggestion},data-customer-url=@{/customer},data-bill-detail-url=${existingBill != null ? '/bill/' + existingBill.billNo : ''}"
 			  class="grid gap-10 xl:grid-cols-[minmax(0,1fr)_18rem]">
 			<div class="min-w-0">
 				<section aria-labelledby="customer-heading" class="border-b border-gray-200 pb-8 dark:border-gray-700">
@@ -22,29 +25,29 @@
 						<div>
 							<label for="customer-name" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Customer name <span aria-hidden="true">*</span></label>
 							<input id="customer-name" name="customerName" type="text" required maxlength="120" autocomplete="name"
-								   th:value="${customer != null ? customer.name : ''}"
+								   th:value="${existingBill != null ? existingBill.customerName : (customer != null ? customer.name : '')}"
 								   class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 								   placeholder="Full name">
 						</div>
 						<div>
 							<label for="customer-mobile" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Mobile number <span aria-hidden="true">*</span></label>
 							<input id="customer-mobile" name="mobileNumber" type="tel" required maxlength="25" autocomplete="tel" inputmode="tel"
-								   th:value="${customer != null ? customer.mobileNo : ''}"
+								   th:value="${existingBill != null ? existingBill.mobileNumber : (customer != null ? customer.mobileNo : '')}"
 								   class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 								   placeholder="Phone number">
 						</div>
 						<div class="sm:col-span-2">
 							<label for="customer-address" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Address <span class="font-normal text-gray-500">(optional)</span></label>
 							<textarea id="customer-address" name="address" rows="2" maxlength="500" autocomplete="street-address"
-									  th:text="${customer != null ? customer.address : ''}"
+									  th:text="${existingBill != null ? existingBill.address : (customer != null ? customer.address : '')}"
 									  class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 									  placeholder="Street, city, or delivery address"></textarea>
 						</div>
 						<div>
 							<label for="bill-type" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Bill type</label>
 							<select id="bill-type" name="billType" required class="block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
-								<option value="sale" th:selected="${selectedBillType == null or selectedBillType == 'sale'}">Sale</option>
-								<option value="returnItem" th:selected="${selectedBillType == 'returnItem'}">Item return</option>
+								<option value="sale" th:selected="${existingBill != null ? (existingBill.billType == null or existingBill.billType.name() == 'sale') : (selectedBillType == null or selectedBillType == 'sale')}">Sale</option>
+								<option value="returnItem" th:selected="${existingBill != null ? (existingBill.billType != null and existingBill.billType.name() == 'returnItem') : selectedBillType == 'returnItem'}">Item return</option>
 							</select>
 						</div>
 					</div>
@@ -102,7 +105,7 @@
 					</button>
 					<button id="create-bill-button" type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-blue-900">
 						<i class="fa-solid fa-receipt" aria-hidden="true"></i>
-						Create bill
+						<span th:text="${existingBill != null ? 'Review changes' : 'Create bill'}">Create bill</span>
 					</button>
 				</div>
 			</div>
@@ -131,7 +134,8 @@
 					<label for="discount-amount" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Discount amount</label>
 					<div class="relative">
 						<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500">&#8377;</span>
-						<input id="discount-amount" name="discount" type="number" min="0" step="0.01" value="0" max="0"
+						<input id="discount-amount" name="discount" type="number" min="0" step="0.01"
+							   th:value="${existingBill != null ? existingBill.discount : 0}" value="0" max="0"
 							   class="block w-full rounded-md border border-gray-300 bg-white py-2.5 pl-7 pr-3 text-sm text-gray-900 focus:border-blue-600 focus:ring-blue-600 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:disabled:bg-gray-700">
 					</div>
 					<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Discount applies to sales only.</p>
@@ -157,7 +161,7 @@
 						</button>
 						<button id="save-bill" type="button" class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">
 							<i class="fa-solid fa-check" aria-hidden="true"></i>
-							Confirm &amp; save bill
+							<span th:text="${existingBill != null ? 'Save changes' : 'Confirm & save bill'}">Confirm &amp; save bill</span>
 						</button>
 					</div>
 				</div>
@@ -268,7 +272,8 @@
 			}
 		</style>
 
-		<script>
+		<script th:inline="javascript">
+			const existingBill = /*[[${existingBill}]]*/ null;
 			const sellForm = document.querySelector("#sell-form");
 			const saleRows = document.querySelector("#sale-rows");
 			const saleRowTemplate = document.querySelector("#sale-row-template");
@@ -598,9 +603,13 @@
 						quantityInput.removeAttribute("max");
 						if (Number(quantityInput.value) < 1) quantityInput.value = "1";
 					} else if (row.dataset.itemId) {
-						const available = Number(row.dataset.available || 0);
-						quantityInput.max = String(available);
-						if (Number(quantityInput.value) > available) quantityInput.value = String(available);
+						if (row.dataset.available) {
+							const available = Number(row.dataset.available);
+							quantityInput.max = String(available);
+							if (Number(quantityInput.value) > available) quantityInput.value = String(available);
+						} else {
+							quantityInput.removeAttribute("max");
+						}
 					}
 				});
 				updateSummary();
@@ -627,8 +636,10 @@
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify(pendingBill)
 					});
-					if (!response.ok) throw new Error(`Bill creation failed (HTTP ${response.status}).`);
-					window.location.assign(`${sellForm.dataset.customerUrl}/${encodeURIComponent(pendingBill.mobileNumber)}`);
+					if (!response.ok) throw new Error(`Bill could not be saved (HTTP ${response.status}).`);
+					window.location.assign(existingBill
+						? sellForm.dataset.billDetailUrl
+						: `${sellForm.dataset.customerUrl}/${encodeURIComponent(pendingBill.mobileNumber)}`);
 				} catch (error) {
 					saleFeedback.textContent = error.message || "Could not create the bill. Please try again.";
 					saleFeedback.className = "mt-5 text-sm text-red-700 dark:text-red-400";
@@ -640,6 +651,26 @@
 				}
 			});
 
+			if (existingBill) {
+				const existingItems = Array.isArray(existingBill.items) ? existingBill.items : [];
+				saleRows.replaceChildren();
+				existingItems.forEach((item, index) => {
+					saleRows.append(saleRowTemplate.content.cloneNode(true));
+					const row = saleRows.lastElementChild;
+					row.dataset.itemId = item.inventoryItemId ?? "";
+					row.dataset.brand = item.brand ?? "";
+					row.dataset.size = item.size ?? "";
+					row.querySelector('[name="productName"]').value = item.name ?? item.inventoryItemId ?? "";
+					row.querySelector('[name="quantity"]').value = String(item.count ?? 1);
+					row.querySelector('[name="quantity"]').removeAttribute("max");
+					row.querySelector('[name="unitPrice"]').value = Number(item.sellingPrice ?? 0).toFixed(2);
+					row.querySelector(".sale-item-details").textContent = [item.brand, item.size]
+						.filter(Boolean).join(" / ");
+				});
+				if (existingItems.length === 0) {
+					saleRows.append(saleRowTemplate.content.cloneNode(true));
+				}
+			}
 			updateRows();
 		</script>
 	</section>

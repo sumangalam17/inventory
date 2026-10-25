@@ -111,6 +111,97 @@ public class BillService {
     }
 
     @Transactional
+    public void updateBill(String billNo, CreateBillRequest request) {
+        Bill bill = billDao.findById(billNo)
+                .orElseThrow(() -> new IllegalArgumentException("Bill not found."));
+        if (bill.getBillType() != BillType.sale && bill.getBillType() != BillType.returnItem) {
+            throw new IllegalStateException("Cannot edit a bill with an unknown type.");
+        }
+        if (request.getBillType() != BillType.sale && request.getBillType() != BillType.returnItem) {
+            throw new IllegalArgumentException("Bill type must be sale or item return.");
+        }
+        if (request.getCustomerName() == null || request.getCustomerName().isBlank()
+                || request.getMobileNumber() == null || request.getMobileNumber().isBlank()) {
+            throw new IllegalArgumentException("Customer name and mobile number are required.");
+        }
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("At least one product is required.");
+        }
+        if (request.getItems().stream().anyMatch(item -> item == null
+                || item.getCount() < 1 || item.getPrice() < 0)) {
+            throw new IllegalArgumentException("Product quantities must be positive and prices must not be negative.");
+        }
+
+        double subtotal = request.getItems().stream()
+                .mapToDouble(item -> item.getPrice() * item.getCount())
+                .sum();
+        double discount = request.getBillType() == BillType.sale ? request.getDiscount() : 0;
+        if (!Double.isFinite(subtotal) || !Double.isFinite(discount)
+                || discount < 0 || discount > subtotal) {
+            throw new IllegalArgumentException("Discount must be between zero and the subtotal.");
+        }
+
+        Customer previousCustomer = customerDao.findById(bill.getMobileNumber())
+                .orElseThrow(() -> new IllegalStateException("Customer associated with bill not found."));
+        adjustInventory(bill, -1);
+        adjustCustomerBalance(previousCustomer, bill.getBillType(), bill.getTotal(), -1);
+        customerDao.save(previousCustomer);
+
+        Customer updatedCustomer = bill.getMobileNumber().equals(request.getMobileNumber())
+                ? previousCustomer
+                : customerService.getCustomer(request.getMobileNumber())
+                        .orElseGet(() -> customerService.createCustomer(
+                                request.getCustomerName(), request.getMobileNumber(), request.getAddress()));
+        bill.setCustomerName(request.getCustomerName());
+        bill.setMobileNumber(request.getMobileNumber());
+        bill.setAddress(request.getAddress());
+        bill.setBillType(request.getBillType());
+        bill.setDiscount(discount);
+        bill.setTotal(subtotal - discount);
+        bill.setItems(new ArrayList<>(request.getItems().stream().map(requestItem -> {
+            SoldItem item = new SoldItem();
+            item.setInventoryItemId(requestItem.getItemId());
+            item.setName(requestItem.getName());
+            item.setBrand(requestItem.getBrand());
+            item.setSize(requestItem.getSize());
+            item.setCount(requestItem.getCount());
+            item.setSellingPrice(requestItem.getPrice());
+            return item;
+        }).toList()));
+        adjustInventory(bill, 1);
+        adjustCustomerBalance(updatedCustomer, bill.getBillType(), bill.getTotal(), 1);
+        customerDao.save(updatedCustomer);
+        billDao.save(bill);
+
+        transactionDao.deleteByBillNo(billNo);
+        transactionService.createTransactions(
+                updatedCustomer.getMobileNo(),
+                billNo,
+                bill.getTotal(),
+                bill.getBillType() == BillType.sale ? TransactionType.sale : TransactionType.itemReturn);
+    }
+
+    private void adjustInventory(Bill bill, int direction) {
+        int billTypeSign = bill.getBillType() == BillType.sale ? -1 : 1;
+        for (SoldItem soldItem : bill.getItems()) {
+            if (soldItem.getInventoryItemId() == null || soldItem.getInventoryItemId().isBlank()) {
+                continue;
+            }
+            itemDao.findById(soldItem.getInventoryItemId()).ifPresent(inventoryItem -> {
+                inventoryItem.setCount(inventoryItem.getCount() + direction * billTypeSign * soldItem.getCount());
+                itemDao.save(inventoryItem);
+            });
+        }
+    }
+
+    private static void adjustCustomerBalance(Customer customer, BillType billType, double amount, int direction) {
+        int billTypeSign = billType == BillType.sale ? 1 : -1;
+        double balanceChange = direction * billTypeSign * amount;
+        customer.setTotal(customer.getTotal() + balanceChange);
+        customer.setAmountPending(customer.getAmountPending() + balanceChange);
+    }
+
+    @Transactional
     public void deleteBill(String billNo) {
         Bill bill = billDao.findById(billNo)
                 .orElseThrow(() -> new IllegalArgumentException("Bill not found."));
