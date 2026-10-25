@@ -103,7 +103,7 @@
             </div>
         </div>
 
-        <section class="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <section id="customer-transactions" class="mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transactions</h2>
@@ -112,37 +112,52 @@
                         Showing all transactions
                     </p>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    <span th:text="${#lists.size(transactions)}">0</span> total
-                </p>
+                <div class="flex items-center gap-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <span th:text="${#lists.size(transactions)}">0</span> total
+                    </p>
+                    <a th:if="${dateRangeSelected}"
+                       th:href="@{/customer/{mobileNo}/transactions/pdf(mobileNo=${customer.mobileNo},fromDate=${fromDate},toDate=${toDate})}"
+                       class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                        Download transactions
+                    </a>
+                    <a th:unless="${dateRangeSelected}"
+                       th:href="@{/customer/{mobileNo}/transactions/pdf(mobileNo=${customer.mobileNo})}"
+                       class="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                        Download transactions
+                    </a>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                         <tr>
-                            <th scope="col" class="px-5 py-3">Type</th>
-                            <th scope="col" class="px-5 py-3">Time</th>
+                            <th scope="col" class="px-5 py-3">Date</th>
                             <th scope="col" class="px-5 py-3">Bill ID</th>
-                            <th scope="col" class="px-5 py-3">Amount</th>
-                            <th scope="col" class="px-5 py-3">Action</th>
+                            <th scope="col" class="px-5 py-3">Type</th>
+                            <th scope="col" class="px-5 py-3">Credit</th>
+                            <th scope="col" class="px-5 py-3">Debit</th>
+                            <th scope="col" class="px-5 py-3 print:hidden">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:if="${#lists.isEmpty(transactions)}">
-                            <td colspan="5" class="px-5 py-12 text-center">
+                            <td colspan="6" class="px-5 py-12 text-center">
                                 <p class="font-semibold text-gray-900 dark:text-white">No transactions found</p>
                                 <p class="mt-1">This customer has no transaction history yet.</p>
                             </td>
                         </tr>
 
-                        <tr th:each="transaction : ${transactions}" class="border-t border-gray-200 dark:border-gray-700"
-                            th:classappend="${transaction.transactionType != null and transaction.transactionType.name() == 'recieved' ? 'bg-green-200 dark:bg-green-900/40' : transaction.transactionType != null and transaction.transactionType.name() == 'itemReturn' ? 'bg-gray-200 dark:bg-gray-700' : transaction.transactionType != null and (transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'refund') ? 'bg-red-200 dark:bg-red-900/40' : ''}">
-                            <td class="px-5 py-4 font-medium text-gray-900 dark:text-white" th:text="${transaction.transactionType != null and transaction.transactionType.name() == 'itemReturn' ? 'Return' : transaction.transactionType}">sale</td>
+                        <tr th:each="transaction : ${transactions}" class="border-t border-gray-200 dark:border-gray-700">
                             <td class="px-5 py-4" th:text="${#dates.format(transaction.creatDate, 'dd-MM-yyyy HH:mm:ss')}">-</td>
                             <td class="px-5 py-4" th:text="${transaction.billNo}">-</td>
-                            <td class="px-5 py-4" th:text="${transaction.amount}">0</td>
-                            <td class="px-5 py-4">
+                            <td class="px-5 py-4 font-medium text-gray-900 dark:text-white" th:text="${transaction.transactionType != null and transaction.transactionType.name() == 'itemReturn' ? 'Return' : transaction.transactionType}">sale</td>
+                            <td class="px-5 py-4 font-medium text-green-700 dark:text-green-400" th:text="${transaction.transactionType != null and (transaction.transactionType.name() == 'recieved' or transaction.transactionType.name() == 'itemReturn') ? transaction.amount : '-'}">-</td>
+                            <td class="px-5 py-4 font-medium text-red-700 dark:text-red-400" th:text="${transaction.transactionType != null and (transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'refund') ? transaction.amount : '-'}">-</td>
+                            <td class="px-5 py-4 print:hidden">
                                 <a th:if="${transaction.transactionType != null and (transaction.transactionType.name() == 'sale' or transaction.transactionType.name() == 'itemReturn')}"
                                    th:href="@{/bill/{billNo}(billNo=${transaction.billNo})}"
                                    class="inline-flex min-w-28 items-center justify-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">

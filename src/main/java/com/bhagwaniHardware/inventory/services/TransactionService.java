@@ -49,4 +49,12 @@ public class TransactionService {
         return transactionDao.findByCustomerIDAndCreatDateGreaterThanEqualAndCreatDateLessThanOrderByCreatDateDesc(
                 customerId, fromInclusive, toExclusive);
     }
+
+    public List<Transactions> getTransactions(LocalDate fromDate, LocalDate toDate) {
+        ZoneId zone = ZoneId.systemDefault();
+        Date fromInclusive = Date.from(fromDate.atStartOfDay(zone).toInstant());
+        Date toExclusive = Date.from(toDate.plusDays(1).atStartOfDay(zone).toInstant());
+        return transactionDao.findByCreatDateGreaterThanEqualAndCreatDateLessThanOrderByCreatDateDesc(
+                fromInclusive, toExclusive);
+    }
 }

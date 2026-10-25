@@ -11,6 +11,8 @@ public interface TransactionDao extends JpaRepository<Transactions,String>{
     public List<Transactions> findByCustomerIDOrderByCreatDateDesc(String customerID);
     public List<Transactions> findByCustomerIDAndCreatDateGreaterThanEqualAndCreatDateLessThanOrderByCreatDateDesc(
             String customerID, Date fromInclusive, Date toExclusive);
+    List<Transactions> findByCreatDateGreaterThanEqualAndCreatDateLessThanOrderByCreatDateDesc(
+            Date fromInclusive, Date toExclusive);
     List<Transactions> findByBillNo(String billNo);
     void deleteByBillNo(String billNo);
 }

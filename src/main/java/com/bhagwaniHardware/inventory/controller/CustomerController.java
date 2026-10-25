@@ -5,7 +5,11 @@ import java.time.LocalDate;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.bhagwaniHardware.inventory.dto.TransactionType;
 import com.bhagwaniHardware.inventory.model.Transactions;
+import com.bhagwaniHardware.inventory.model.Customer;
+import com.bhagwaniHardware.inventory.services.BillPdfService;
 import com.bhagwaniHardware.inventory.services.CustomerService;
 import com.bhagwaniHardware.inventory.services.TransactionService;
 
@@ -26,10 +32,13 @@ public class CustomerController {
 
     private final CustomerService customerService;
     private final TransactionService transactionService;
+    private final BillPdfService billPdfService;
     
-    public CustomerController(CustomerService customerService, TransactionService transactionService){
+    public CustomerController(CustomerService customerService, TransactionService transactionService,
+            BillPdfService billPdfService){
         this.customerService = customerService;
         this.transactionService = transactionService;
+        this.billPdfService = billPdfService;
     }
 
     @GetMapping("/{mobileNo}")
@@ -56,6 +65,38 @@ public class CustomerController {
         model.addAttribute("toDate", toDate);
         model.addAttribute("dateRangeSelected", fromDate != null);
         return "individualCustomer";
+    }
+
+    @GetMapping(value = "/{mobileNo}/transactions/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadCustomerTransactionsPdf(
+            @PathVariable String mobileNo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        Customer customer = customerService.getCustomer(mobileNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
+        if ((fromDate == null) != (toDate == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select both transaction dates");
+        }
+        if (fromDate != null && fromDate.isAfter(toDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "From date must not be after To date");
+        }
+
+        List<Transactions> transactions = fromDate == null
+                ? transactionService.getTransactions(mobileNo)
+                : transactionService.getTransactions(mobileNo, fromDate, toDate);
+        try {
+            byte[] pdf = billPdfService.createCustomerTransactionPdf(customer, transactions, fromDate, toDate);
+            String filename = "transactions-" + mobileNo.replaceAll("[^A-Za-z0-9._-]", "_")
+                    + (fromDate == null ? "" : "-" + fromDate + "-to-" + toDate) + ".pdf";
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            ContentDisposition.attachment().filename(filename).build().toString())
+                    .body(pdf);
+        } catch (java.io.IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Could not generate customer transaction PDF", exception);
+        }
     }
 
     @PostMapping("/payAmount/{customerId}")

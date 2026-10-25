@@ -2,6 +2,9 @@ package com.bhagwaniHardware.inventory.controller;
 
 import java.time.LocalDate;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,10 +26,14 @@ import org.springframework.ui.Model;
 
 import com.bhagwaniHardware.inventory.dto.BillType;
 import com.bhagwaniHardware.inventory.dto.CreateBillRequest;
+import com.bhagwaniHardware.inventory.dto.TransactionType;
 import com.bhagwaniHardware.inventory.model.Bill;
+import com.bhagwaniHardware.inventory.model.Customer;
+import com.bhagwaniHardware.inventory.model.Transactions;
 import com.bhagwaniHardware.inventory.services.BillService;
 import com.bhagwaniHardware.inventory.services.BillPdfService;
 import com.bhagwaniHardware.inventory.services.CustomerService;
+import com.bhagwaniHardware.inventory.services.TransactionService;
 
 @Controller
 @RequestMapping("/bill")
@@ -35,11 +42,14 @@ public class BillController {
     private final BillService billService;
     private final BillPdfService billPdfService;
     private final CustomerService customerService;
+    private final TransactionService transactionService;
 
-    public BillController(BillService billService, BillPdfService billPdfService, CustomerService customerService){
+    public BillController(BillService billService, BillPdfService billPdfService, CustomerService customerService,
+            TransactionService transactionService){
         this.billService = billService;
         this.billPdfService = billPdfService;
         this.customerService = customerService;
+        this.transactionService = transactionService;
     }
 
     @GetMapping("/create")
@@ -73,6 +83,7 @@ public class BillController {
         model.addAttribute("bills", fromDate == null
                 ? billService.getAllBills()
                 : billService.getBillsBetweenDates(fromDate, toDate));
+        addTransactionReportModel(model, fromDate, toDate);
         addBillListFilterModel(model, "/bill", fromDate, toDate, "all");
         return "bill";
     }
@@ -86,6 +97,7 @@ public class BillController {
         model.addAttribute("bills", fromDate == null
                 ? billService.getBillsByType(BillType.sale)
                 : billService.getBillsByTypeBetweenDates(BillType.sale, fromDate, toDate));
+        addTransactionReportModel(model, fromDate, toDate);
         addBillListFilterModel(model, "/bill/sales", fromDate, toDate, "sale");
         return "bill";
     }
@@ -99,8 +111,56 @@ public class BillController {
         model.addAttribute("bills", fromDate == null
                 ? billService.getBillsByType(BillType.returnItem)
                 : billService.getBillsByTypeBetweenDates(BillType.returnItem, fromDate, toDate));
+        addTransactionReportModel(model, fromDate, toDate);
         addBillListFilterModel(model, "/bill/returns", fromDate, toDate, "return");
         return "bill";
+    }
+
+    @GetMapping(value = "/report/date-range/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadBillReportPdf(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        validateDateRange(fromDate, toDate);
+        try {
+            List<Transactions> transactions = transactionService.getTransactions(fromDate, toDate);
+            byte[] pdf = billPdfService.createTransactionReportPdf(
+                    transactions, fromDate, toDate,
+                    customerNamesByMobile());
+            String filename = "transaction-report-" + fromDate + "-to-" + toDate + ".pdf";
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            ContentDisposition.attachment().filename(filename).build().toString())
+                    .body(pdf);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Could not generate bill report PDF", exception);
+        }
+    }
+
+    private void addTransactionReportModel(Model model, LocalDate fromDate, LocalDate toDate) {
+        LocalDate reportToDate = toDate == null ? LocalDate.now() : toDate;
+        LocalDate reportFromDate = fromDate == null ? reportToDate.minusMonths(1) : fromDate;
+        List<Transactions> transactions = transactionService.getTransactions(reportFromDate, reportToDate);
+        model.addAttribute("transactions", transactions);
+        model.addAttribute("customerNames", customerNamesByMobile());
+        model.addAttribute("transactionReportFromDate", reportFromDate);
+        model.addAttribute("transactionReportToDate", reportToDate);
+        model.addAttribute("transactionCreditTotal", transactions.stream()
+                .filter(transaction -> transaction.getTransactionType() == TransactionType.recieved
+                        || transaction.getTransactionType() == TransactionType.itemReturn)
+                .mapToDouble(Transactions::getAmount).sum());
+        model.addAttribute("transactionDebitTotal", transactions.stream()
+                .filter(transaction -> transaction.getTransactionType() == TransactionType.sale
+                        || transaction.getTransactionType() == TransactionType.refund)
+                .mapToDouble(Transactions::getAmount).sum());
+    }
+
+    private Map<String, String> customerNamesByMobile() {
+        return customerService.getAll().stream()
+                .collect(Collectors.toMap(Customer::getMobileNo,
+                        customer -> customer.getName() == null ? "" : customer.getName(),
+                        (firstName, ignored) -> firstName));
     }
 
     private void addBillListFilterModel(Model model, String filterAction, LocalDate fromDate, LocalDate toDate, String billListType) {
